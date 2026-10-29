@@ -1,11 +1,11 @@
 {
   "kdf": {
-    "salt": "PnL6BKgYyiryV8Oh4bhVbA==",
+    "salt": "+oaTXM1gkHPILPh4g+Y8ew==",
     "iterations": 250000
   },
   "check": {
-    "iv": "BJUvDyZYp4Xky1nw",
-    "ct": "vgyt/k82IcZsu+/7s/ma87wx"
+    "iv": "Ge0gztA+VO+gp2kj",
+    "ct": "ChRbzFUlaWJewuKHaooVC4N1"
   },
   "templates": [
     {
@@ -14,17 +14,17 @@
       "files": {
         "video": {
           "path": "assets/rajul-en-video.bin",
-          "iv": "OBEav374Odwb56f0",
-          "size": 6088473
+          "iv": "hTfYMVQWZCXypHvb",
+          "size": 5812414
         },
         "background": {
           "path": "assets/rajul-en-background.bin",
-          "iv": "nisYqyO2nVJNqrrd",
+          "iv": "r6I0YhAcSv22KgPb",
           "size": 271383
         },
         "music": {
           "path": "assets/rajul-en-music.bin",
-          "iv": "nC89KpnpZOqcbud4",
+          "iv": "rt+m79F7vBNV0Wcv",
           "size": 434560
         }
       }

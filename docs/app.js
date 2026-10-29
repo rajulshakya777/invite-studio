@@ -5,11 +5,12 @@ const W = 1080, H = 1920, OUT_W = 720, OUT_H = 1280, FPS = 30;
 const INTRO_SECONDS = 3, OUTRO_SECONDS = 3.5;
 // Header-relevant x264 settings copied from the template encode so the slide SPS/PPS are
 // byte-identical to the main video and it can be concatenated without re-encoding.
-// Only me/subme/trellis/lookahead are lowered for speed (they don't change the headers).
+// Only me/subme/trellis/lookahead are lowered for speed (they don't change the headers);
+// crf must equal the template's because x264 writes it into the PPS (pic_init_qp).
 const X264_LEVEL = "3.1";
 const X264_PARAMS = "cabac=1:ref=2:deblock=0,0:8x8dct=1:cqm=flat:chroma-qp-offset=-2:bframes=3:" +
   "b-pyramid=normal:weightb=1:weightp=1:keyint=250:keyint-min=25:open-gop=0:" +
-  "me=dia:subme=1:trellis=0:rc-lookahead=10:crf=21";
+  "me=dia:subme=1:trellis=0:rc-lookahead=10:crf=23";
 
 const $ = (id) => document.getElementById(id);
 const steps = ["step-lock", "step-form", "step-progress", "step-result", "step-error"];
