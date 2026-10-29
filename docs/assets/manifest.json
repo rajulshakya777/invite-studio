@@ -1,0 +1,49 @@
+{
+  "kdf": {
+    "salt": "EbIn8S85vXJd3400rfqLtA==",
+    "iterations": 250000
+  },
+  "check": {
+    "iv": "Xq2+I13kwp344lTj",
+    "ct": "zPP7BUxPxLKssBdM6EcIFwql"
+  },
+  "templates": [
+    {
+      "id": "rajul-en",
+      "label": "Rajul – English (original video, no audio track)",
+      "audio": null,
+      "files": {
+        "video": {
+          "path": "assets/rajul-en-video.bin",
+          "iv": "sgRRQ2gsWOyAeJsx",
+          "size": 11337096
+        },
+        "background": {
+          "path": "assets/rajul-en-background.bin",
+          "iv": "t4Qk1agMZSPdQJgb",
+          "size": 490563
+        }
+      }
+    },
+    {
+      "id": "rajul-en-audiotest",
+      "label": "Rajul – English + test music (audio check)",
+      "audio": {
+        "sampleRate": 44100,
+        "channels": 2
+      },
+      "files": {
+        "video": {
+          "path": "assets/rajul-en-audiotest-video.bin",
+          "iv": "53dQQB7q3PoA0KL4",
+          "size": 11674471
+        },
+        "background": {
+          "path": "assets/rajul-en-audiotest-background.bin",
+          "iv": "walBRccKcfD/eEAq",
+          "size": 490563
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Invite Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=Noto+Serif+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="brand">
+      <p class="eyebrow">Rajul &amp; Dolly</p>
+      <h1>Invite Studio</h1>
+      <p class="tag">Feasibility prototype · one template</p>
+    </header>
+
+    <!-- Step 1: password -->
+    <section id="step-lock" class="card">
+      <h2>Enter password</h2>
+      <form id="lock-form" autocomplete="off">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <button type="submit" class="primary" id="unlock-btn">Unlock</button>
+        <p class="error" id="lock-error" hidden></p>
+      </form>
+    </section>
+
+    <!-- Step 2: details -->
+    <section id="step-form" class="card" hidden>
+      <h2>Personalise the invitation</h2>
+      <form id="invite-form" novalidate>
+        <fieldset>
+          <legend>Template</legend>
+          <div id="template-list" class="radio-list"></div>
+        </fieldset>
+
+        <label for="guest">Guest name</label>
+        <input id="guest" maxlength="48" placeholder="e.g. Sharma Family" required>
+
+        <label for="message">Invitation message</label>
+        <textarea id="message" rows="4" maxlength="240" required>With the blessings of our families, we warmly invite you to celebrate our wedding with us.</textarea>
+        <p class="hint"><span id="message-count"></span> / 240</p>
+
+        <fieldset>
+          <legend>RSVP contact</legend>
+          <div id="saved-contacts" class="chips" aria-label="Saved contacts"></div>
+          <label for="rsvp-name">Name</label>
+          <input id="rsvp-name" maxlength="40" placeholder="e.g. Rajul Shakywar" required>
+          <label for="rsvp-phone">Phone number</label>
+          <input id="rsvp-phone" type="tel" inputmode="tel" maxlength="20" placeholder="e.g. +91 98765 43210" required>
+          <label class="check"><input type="checkbox" id="save-contact" checked> Save this contact for next time</label>
+        </fieldset>
+
+        <p class="error" id="form-error" hidden></p>
+        <button type="submit" class="primary" id="generate-btn">Generate video</button>
+      </form>
+    </section>
+
+    <!-- Step 3: progress -->
+    <section id="step-progress" class="card" hidden>
+      <h2>Creating the video…</h2>
+      <p id="progress-label" class="progress-label">Starting</p>
+      <div class="bar"><div id="progress-fill"></div></div>
+      <p class="hint">Keep this screen open. The first run downloads the video engine (about 32 MB). Later runs are faster.</p>
+    </section>
+
+    <!-- Step 4: result -->
+    <section id="step-result" class="card" hidden>
+      <h2>Preview</h2>
+      <video id="preview" controls playsinline preload="metadata"></video>
+      <p id="result-meta" class="hint"></p>
+      <div class="actions">
+        <a id="download-btn" class="primary button" download>Download MP4</a>
+        <button id="share-btn" class="secondary" hidden>Share…</button>
+        <button id="again-btn" class="secondary">Make another</button>
+      </div>
+    </section>
+
+    <!-- Error -->
+    <section id="step-error" class="card" hidden>
+      <h2>Something went wrong</h2>
+      <p id="error-message" class="error"></p>
+      <details><summary>Technical details</summary><pre id="error-log"></pre></details>
+      <button id="retry-btn" class="primary">Back to the form</button>
+    </section>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
