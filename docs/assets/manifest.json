@@ -1,47 +1,31 @@
 {
   "kdf": {
-    "salt": "EbIn8S85vXJd3400rfqLtA==",
+    "salt": "PnL6BKgYyiryV8Oh4bhVbA==",
     "iterations": 250000
   },
   "check": {
-    "iv": "Xq2+I13kwp344lTj",
-    "ct": "zPP7BUxPxLKssBdM6EcIFwql"
+    "iv": "BJUvDyZYp4Xky1nw",
+    "ct": "vgyt/k82IcZsu+/7s/ma87wx"
   },
   "templates": [
     {
       "id": "rajul-en",
-      "label": "Rajul – English (original video, no audio track)",
-      "audio": null,
+      "label": "Rajul – English",
       "files": {
         "video": {
           "path": "assets/rajul-en-video.bin",
-          "iv": "sgRRQ2gsWOyAeJsx",
-          "size": 11337096
+          "iv": "OBEav374Odwb56f0",
+          "size": 6088473
         },
         "background": {
           "path": "assets/rajul-en-background.bin",
-          "iv": "t4Qk1agMZSPdQJgb",
-          "size": 490563
-        }
-      }
-    },
-    {
-      "id": "rajul-en-audiotest",
-      "label": "Rajul – English + test music (audio check)",
-      "audio": {
-        "sampleRate": 44100,
-        "channels": 2
-      },
-      "files": {
-        "video": {
-          "path": "assets/rajul-en-audiotest-video.bin",
-          "iv": "53dQQB7q3PoA0KL4",
-          "size": 11674471
+          "iv": "nisYqyO2nVJNqrrd",
+          "size": 271383
         },
-        "background": {
-          "path": "assets/rajul-en-audiotest-background.bin",
-          "iv": "walBRccKcfD/eEAq",
-          "size": 490563
+        "music": {
+          "path": "assets/rajul-en-music.bin",
+          "iv": "nC89KpnpZOqcbud4",
+          "size": 434560
         }
       }
     }

@@ -1,6 +1,7 @@
 // Encrypts the private template assets so they can sit on public static hosting.
 // Usage: SITE_PASSWORD=... node tools/encrypt-assets.mjs <assets.json>
-// assets.json: { "templates": [{ "id", "label", "video", "background", "audio": null | { "sampleRate", "channels" } }] }
+// assets.json: { "templates": [{ "id", "label", "video", "background", "music" }] }
+// video: silent, pre-encoded with the x264 header settings in docs/app.js; music: AAC covering the full output length.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { webcrypto as crypto } from "node:crypto";
 import path from "node:path";
@@ -31,8 +32,8 @@ const check = await encrypt(new TextEncoder().encode("ok"));
 const manifest = { kdf: { salt: b64(salt), iterations: ITERATIONS }, check: { iv: check.iv, ct: b64(check.ct) }, templates: [] };
 
 for (const t of config.templates) {
-  const entry = { id: t.id, label: t.label, audio: t.audio ?? null, files: {} };
-  for (const kind of ["video", "background"]) {
+  const entry = { id: t.id, label: t.label, files: {} };
+  for (const kind of ["video", "background", "music"]) {
     const src = path.resolve(configDir, t[kind]);
     const { iv, ct } = await encrypt(await readFile(src));
     const name = `${t.id}-${kind}.bin`;

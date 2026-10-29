@@ -1,10 +1,12 @@
 import { FFmpeg } from "./vendor/ffmpeg/index.js";
 
-const W = 1080, H = 1920, FPS = 30;
-const INTRO_SECONDS = 4.5, OUTRO_SECONDS = 5;
+// Output is 720x1280 for phones/WhatsApp. Slide artwork is laid out on a 1080x1920 grid and scaled.
+const W = 1080, H = 1920, OUT_W = 720, OUT_H = 1280, FPS = 30;
+const INTRO_SECONDS = 3, OUTRO_SECONDS = 3.5;
 // Header-relevant x264 settings copied from the template encode so the slide SPS/PPS are
 // byte-identical to the main video and it can be concatenated without re-encoding.
 // Only me/subme/trellis/lookahead are lowered for speed (they don't change the headers).
+const X264_LEVEL = "3.1";
 const X264_PARAMS = "cabac=1:ref=2:deblock=0,0:8x8dct=1:cqm=flat:chroma-qp-offset=-2:bframes=3:" +
   "b-pyramid=normal:weightb=1:weightp=1:keyint=250:keyint-min=25:open-gop=0:" +
   "me=dia:subme=1:trellis=0:rc-lookahead=10:crf=21";
@@ -237,9 +239,15 @@ function divider(ctx, y) {
   ctx.beginPath(); ctx.moveTo(W / 2, y - 9); ctx.lineTo(W / 2 + 9, y); ctx.lineTo(W / 2, y + 9); ctx.lineTo(W / 2 - 9, y); ctx.closePath(); ctx.fill();
 }
 
-function textLayer(draw) {
-  const c = Object.assign(document.createElement("canvas"), { width: W, height: H });
+function outputCanvas() {
+  const c = Object.assign(document.createElement("canvas"), { width: OUT_W, height: OUT_H });
   const ctx = c.getContext("2d");
+  ctx.scale(OUT_W / W, OUT_H / H);
+  return [c, ctx];
+}
+
+function textLayer(draw) {
+  const [c, ctx] = outputCanvas();
   // soft cream glow behind the text keeps it readable over the floral artwork
   const g = ctx.createRadialGradient(W / 2, 640, 60, W / 2, 640, 560);
   g.addColorStop(0, "rgba(251,246,236,0.92)"); g.addColorStop(0.7, "rgba(251,246,236,0.75)"); g.addColorStop(1, "rgba(251,246,236,0)");
@@ -278,26 +286,15 @@ function outroLayer({ rsvpName, rsvpPhone }) {
 
 async function backgroundCanvas(jpegBytes) {
   const bmp = await createImageBitmap(new Blob([jpegBytes], { type: "image/jpeg" }));
-  const c = Object.assign(document.createElement("canvas"), { width: W, height: H });
-  c.getContext("2d").drawImage(bmp, 0, 0, W, H);
+  const [c, ctx] = outputCanvas();
+  ctx.drawImage(bmp, 0, 0, W, H);
   return c;
 }
 
 const pngBytes = (canvas) => new Promise((resolve, reject) => canvas.toBlob(
   (b) => b ? b.arrayBuffer().then((a) => resolve(new Uint8Array(a))) : reject(new Error("Could not render the slide image.")), "image/png"));
 
-function silenceWav(seconds, sampleRate, channels) {
-  const frames = Math.ceil(seconds * sampleRate), dataLen = frames * channels * 2;
-  const buf = new ArrayBuffer(44 + dataLen), v = new DataView(buf);
-  const str = (o, s) => [...s].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0)));
-  str(0, "RIFF"); v.setUint32(4, 36 + dataLen, true); str(8, "WAVE"); str(12, "fmt ");
-  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, channels, true);
-  v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * channels * 2, true);
-  v.setUint16(32, channels * 2, true); v.setUint16(34, 16, true); str(36, "data"); v.setUint32(40, dataLen, true);
-  return new Uint8Array(buf);
-}
-
-function slideArgs(name, seconds, audio, fadeOutWholeFrame) {
+function slideArgs(name, seconds, fadeOutWholeFrame) {
   const fadeText = `fade=t=in:st=0.15:d=0.8:alpha=1${fadeOutWholeFrame ? "" : `,fade=t=out:st=${seconds - 0.6}:d=0.6:alpha=1`}`;
   const tail = fadeOutWholeFrame ? `,fade=t=out:st=${seconds - 0.6}:d=0.6` : "";
   // Decode each PNG once and repeat the frame with the loop filter; `-loop 1` would
@@ -305,12 +302,11 @@ function slideArgs(name, seconds, audio, fadeOutWholeFrame) {
   const repeat = `loop=loop=${Math.round(seconds * FPS) - 1}:size=1,setpts=N/${FPS}/TB`;
   return [
     "-i", "bg.png", "-i", `${name}.png`,
-    ...(audio ? ["-i", "silence.wav"] : []),
     "-filter_complex", `[0:v]format=yuv420p,${repeat}[b];[1:v]format=yuva420p,${repeat},${fadeText}[t];` +
       `[b][t]overlay=format=yuv420${tail},format=yuv420p,setsar=0[v]`,
-    "-map", "[v]", ...(audio ? ["-map", "2:a", "-c:a", "aac", "-b:a", "128k"] : []),
+    "-map", "[v]",
     "-t", String(seconds), "-r", String(FPS),
-    "-c:v", "libx264", "-profile:v", "high", "-level:v", "4.0", "-x264-params", X264_PARAMS,
+    "-c:v", "libx264", "-profile:v", "high", "-level:v", X264_LEVEL, "-x264-params", X264_PARAMS,
     "-video_track_timescale", "15360", "-y", `${name}.mp4`,
   ];
 }
@@ -331,6 +327,7 @@ async function generate(values) {
     t0 = performance.now();
     const video = await getAsset(template, "video", (p) => setProgress(0.3 + p * 0.12, `Loading the main video… ${Math.round(p * 100)}%`));
     const bg = await getAsset(template, "background");
+    const music = await getAsset(template, "music");
     if (loadedVideoId !== template.id) { await ffmpeg.writeFile("main.mp4", video); loadedVideoId = template.id; }
     mark("assets", t0);
 
@@ -340,21 +337,23 @@ async function generate(values) {
     await ffmpeg.writeFile("bg.png", await pngBytes(await backgroundCanvas(bg)));
     await ffmpeg.writeFile("intro.png", await pngBytes(introLayer(values)));
     await ffmpeg.writeFile("outro.png", await pngBytes(outroLayer(values)));
-    if (template.audio) await ffmpeg.writeFile("silence.wav", silenceWav(OUTRO_SECONDS, template.audio.sampleRate, template.audio.channels));
+    await ffmpeg.writeFile("music.m4a", music);
     mark("slides", t0);
 
     t0 = performance.now();
-    await run(slideArgs("intro", INTRO_SECONDS, template.audio, false), "Creating the opening slide", INTRO_SECONDS, 0.45, 0.68);
-    await run(slideArgs("outro", OUTRO_SECONDS, template.audio, true), "Creating the RSVP slide", OUTRO_SECONDS, 0.68, 0.92);
+    await run(slideArgs("intro", INTRO_SECONDS, false), "Creating the opening slide", INTRO_SECONDS, 0.45, 0.68);
+    await run(slideArgs("outro", OUTRO_SECONDS, true), "Creating the RSVP slide", OUTRO_SECONDS, 0.68, 0.92);
     mark("encode", t0);
 
     t0 = performance.now();
     await ffmpeg.writeFile("list.txt", "file intro.mp4\nfile main.mp4\nfile outro.mp4\n");
-    await run(["-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", "-movflags", "+faststart", "-y", "out.mp4"],
-      "Joining the video", INTRO_SECONDS + OUTRO_SECONDS + 20, 0.92, 0.99);
+    // Video is stream-copied; the template's music (pre-encoded to the full length) is muxed over all of it.
+    await run(["-f", "concat", "-safe", "0", "-i", "list.txt", "-i", "music.m4a", "-map", "0:v", "-map", "1:a",
+      "-c", "copy", "-shortest", "-movflags", "+faststart", "-y", "out.mp4"],
+      "Joining the video and music", INTRO_SECONDS + OUTRO_SECONDS + 20, 0.92, 0.99);
     const out = await ffmpeg.readFile("out.mp4");
     mark("join", t0);
-    for (const f of ["intro.png", "outro.png", "bg.png", "intro.mp4", "outro.mp4", "out.mp4", "list.txt"]) await ffmpeg.deleteFile(f).catch(() => {});
+    for (const f of ["intro.png", "outro.png", "bg.png", "intro.mp4", "outro.mp4", "out.mp4", "list.txt", "music.m4a"]) await ffmpeg.deleteFile(f).catch(() => {});
     if (!out?.length) throw new Error("The finished video came out empty.");
 
     setProgress(1, "Done");
