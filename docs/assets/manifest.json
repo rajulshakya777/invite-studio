@@ -1,11 +1,11 @@
 {
   "kdf": {
-    "salt": "+3XgyNT+NS5UcnObhHVMrw==",
+    "salt": "IJMW8J2Pv4KoWi97P7K6rA==",
     "iterations": 250000
   },
   "check": {
-    "iv": "pjsXE0FyR9GlEJAO",
-    "ct": "ormGQL1HdVk37F0HN1jkZn4v"
+    "iv": "ZnB9lLxMBQIV2Ekr",
+    "ct": "AFUxevq4/qxPRXn6MMUBe0nO"
   },
   "templates": [
     {
@@ -25,27 +25,27 @@
       "files": {
         "partA": {
           "path": "assets/rajul-en-partA.bin",
-          "iv": "HdGrFqGbJ85WgApt",
+          "iv": "CF1YSRU9hD5djIG1",
           "size": 356661
         },
         "partB": {
           "path": "assets/rajul-en-partB.bin",
-          "iv": "E6Zn6+ehVuHpzFpU",
+          "iv": "LTzGp2Zefp9r0Dlk",
           "size": 10102110
         },
         "guestBg": {
           "path": "assets/rajul-en-guestBg.bin",
-          "iv": "Rb8cLc9BMejqAgwT",
+          "iv": "G6hpOiSOGhzWwSDL",
           "size": 6679425
         },
         "rsvpBg": {
           "path": "assets/rajul-en-rsvpBg.bin",
-          "iv": "eaI+6p5q9IlPCFNE",
-          "size": 2687377
+          "iv": "xD7Z9/IbMf1eNHb2",
+          "size": 2843590
         },
         "music": {
           "path": "assets/rajul-en-music.bin",
-          "iv": "if0aHzlZg8yt2y0B",
+          "iv": "/QbTM/Y0NqWYcxuA",
           "size": 745282
         }
       }
@@ -67,27 +67,27 @@
       "files": {
         "partA": {
           "path": "assets/rajul-hi-partA.bin",
-          "iv": "t9LOK5aEd+hUHAss",
+          "iv": "p0O9I++XikcK5xxg",
           "size": 355604
         },
         "partB": {
           "path": "assets/rajul-hi-partB.bin",
-          "iv": "xJgfvZNzidcw2aSl",
+          "iv": "5/xYebQxqi3GbCDv",
           "size": 9033498
         },
         "guestBg": {
           "path": "assets/rajul-hi-guestBg.bin",
-          "iv": "pRZOBHz1FQLF07WI",
+          "iv": "UDFdfmT4oDdEvE+9",
           "size": 6477845
         },
         "rsvpBg": {
           "path": "assets/rajul-hi-rsvpBg.bin",
-          "iv": "fjnKrOlhyhrbujHW",
-          "size": 2282324
+          "iv": "zkq9CSHjhvIzazqt",
+          "size": 1977463
         },
         "music": {
           "path": "assets/rajul-hi-music.bin",
-          "iv": "IT3UW7iYJDl1s30c",
+          "iv": "NPvxwWWqUj3TMXNq",
           "size": 745282
         }
       }
@@ -109,27 +109,27 @@
       "files": {
         "partA": {
           "path": "assets/dolly-en-partA.bin",
-          "iv": "DFpXO0fiRiXgDX73",
+          "iv": "dmnsvh531FgYr1fX",
           "size": 356661
         },
         "partB": {
           "path": "assets/dolly-en-partB.bin",
-          "iv": "JnMbYBmiAZZcLy9I",
+          "iv": "FxhzpZed4sJfv8LY",
           "size": 7446046
         },
         "guestBg": {
           "path": "assets/dolly-en-guestBg.bin",
-          "iv": "Fy4QIazzVhrWaACK",
+          "iv": "N4Qu3r6COHdbLv8c",
           "size": 6376891
         },
         "rsvpBg": {
           "path": "assets/dolly-en-rsvpBg.bin",
-          "iv": "d8Iw6HNgMnXEBAxx",
-          "size": 2687377
+          "iv": "VUEbjzTHko+K46nY",
+          "size": 2843090
         },
         "music": {
           "path": "assets/dolly-en-music.bin",
-          "iv": "G6QydAJQJ2VFOGf+",
+          "iv": "Sko3oJaKEohzGCUO",
           "size": 660462
         }
       }
@@ -151,27 +151,27 @@
       "files": {
         "partA": {
           "path": "assets/dolly-hi-partA.bin",
-          "iv": "f/0N0i4qYBAekUpn",
+          "iv": "QhEKIUANLfcyqmI4",
           "size": 355604
         },
         "partB": {
           "path": "assets/dolly-hi-partB.bin",
-          "iv": "e1eRq7hJSnzMUG+Y",
+          "iv": "nYoy2RKnaClll8tF",
           "size": 7312911
         },
         "guestBg": {
           "path": "assets/dolly-hi-guestBg.bin",
-          "iv": "w40kVOSYgKDdT9Aq",
+          "iv": "zjmKQXX1AKWT8KNa",
           "size": 6503937
         },
         "rsvpBg": {
           "path": "assets/dolly-hi-rsvpBg.bin",
-          "iv": "qt7QDFcNW7bDmr1B",
-          "size": 2282324
+          "iv": "gCuoovzGYNmKS0wk",
+          "size": 1984342
         },
         "music": {
           "path": "assets/dolly-hi-music.bin",
-          "iv": "gmlTUX0G7cty23Zh",
+          "iv": "ACUIiempHykk6TW1",
           "size": 660462
         }
       }
@@ -199,7 +199,7 @@
       },
       "file": {
         "path": "assets/rajul-en-card.bin",
-        "iv": "nA0+B9Nw+9QdPkTU",
+        "iv": "cB6adHYeksneQMjI",
         "size": 3041911,
         "type": "image/jpeg"
       }
@@ -225,7 +225,7 @@
       },
       "file": {
         "path": "assets/rajul-hi-card.bin",
-        "iv": "hvSZnEwfPsp7eKaq",
+        "iv": "1+DqozN0mjoCSyIE",
         "size": 3001354,
         "type": "image/jpeg"
       }
@@ -251,7 +251,7 @@
       },
       "file": {
         "path": "assets/dolly-en-card.bin",
-        "iv": "5SMpXm1gvNHIBzGc",
+        "iv": "YNbwre5USBlJm71m",
         "size": 3016430,
         "type": "image/jpeg"
       }
@@ -277,7 +277,7 @@
       },
       "file": {
         "path": "assets/dolly-hi-card.bin",
-        "iv": "U5IXVLgDBXGUtr9d",
+        "iv": "Iz15sYxE89XZcF60",
         "size": 2976596,
         "type": "image/jpeg"
       }

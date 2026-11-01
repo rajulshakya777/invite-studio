@@ -633,7 +633,12 @@ function drawCardGuest(ctx, box, rawName) {
   const ms = lines.map((ln) => ctx.measureText(ln));
   const asc = ms[0].actualBoundingBoxAscent, desc = ms[ms.length - 1].actualBoundingBoxDescent;
   const first = (box.top + box.bottom) / 2 - (asc + gap * (lines.length - 1) + desc) / 2 + asc;
-  lines.forEach((ln, i) => ctx.fillText(ln, box.cx, first + i * gap));
+  // centre each line on the ink of the name itself; the trailing comma hangs outside so the name sits under "Dear"
+  ctx.textAlign = "left";
+  lines.forEach((ln, i) => {
+    const m = ctx.measureText(ln.replace(/,$/, ""));
+    ctx.fillText(ln, box.cx - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2, first + i * gap);
+  });
   return { lines, size };
 }
 async function renderCard(card, guest, onProgress) {
@@ -683,6 +688,7 @@ function showResult(blob, values, filename, meta) {
   const isCard = blob.type.startsWith("image/"), what = isCard ? "card" : "video";
   $("video-frame").hidden = isCard;
   $("card-frame").hidden = !isCard;
+  $("hd-tip").hidden = isCard;
   if (isCard) { $("preview").removeAttribute("src"); $("preview").load(); $("card-preview").src = resultUrl; }
   else { $("card-preview").removeAttribute("src"); $("preview").src = resultUrl; }
   const dl = $("download-btn");
