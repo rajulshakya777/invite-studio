@@ -1,11 +1,11 @@
 {
   "kdf": {
-    "salt": "eqpIbykX1x4LNLkaKj/xLw==",
+    "salt": "+i9YhvFeOgRLKWmfNO6zGA==",
     "iterations": 250000
   },
   "check": {
-    "iv": "Ew6IDOloRKSfDNkv",
-    "ct": "cQFZ7GN0wZOe7EnRLMKmr6vX"
+    "iv": "NE2hLwe9XhRgS374",
+    "ct": "RCDOq5CNjkI+cq/hELcqNB8X"
   },
   "templates": [
     {
@@ -15,7 +15,7 @@
       "lang": "en",
       "guest": {
         "cx": 430,
-        "cy": 322
+        "bottom": 428
       },
       "totalSeconds": 43.9,
       "guestSeconds": 7.5,
@@ -23,27 +23,27 @@
       "files": {
         "partA": {
           "path": "assets/rajul-en-partA.bin",
-          "iv": "v/iADGUN83pZC2Sq",
-          "size": 205826
+          "iv": "AbvlXEzDqYd0pzOL",
+          "size": 346761
         },
         "partB": {
           "path": "assets/rajul-en-partB.bin",
-          "iv": "fTWJGW3+/POK3f79",
-          "size": 6446592
+          "iv": "YU460fTRtYsCVvVX",
+          "size": 11388323
         },
         "guestBg": {
           "path": "assets/rajul-en-guestBg.bin",
-          "iv": "FR0LxvWJTXgeYfRn",
+          "iv": "UE78ybdfrSebDiOR",
           "size": 6746260
         },
         "rsvpBg": {
           "path": "assets/rajul-en-rsvpBg.bin",
-          "iv": "o3y6/pxqSJ1cbN3K",
+          "iv": "sUGXlsXVuQlO43Fu",
           "size": 2199183
         },
         "music": {
           "path": "assets/rajul-en-music.bin",
-          "iv": "FhxD2fILS4uZUbHs",
+          "iv": "gHOfa3ixeA67diZS",
           "size": 718584
         }
       }
@@ -55,7 +55,7 @@
       "lang": "hi",
       "guest": {
         "cx": 444,
-        "cy": 322
+        "bottom": 430
       },
       "totalSeconds": 43.9,
       "guestSeconds": 7.5,
@@ -63,27 +63,27 @@
       "files": {
         "partA": {
           "path": "assets/rajul-hi-partA.bin",
-          "iv": "egdzqUJwmt0kPYFt",
-          "size": 205222
+          "iv": "6gwC8G4o3M+lxzJZ",
+          "size": 345087
         },
         "partB": {
           "path": "assets/rajul-hi-partB.bin",
-          "iv": "QLIqxDxRkD27KU9s",
-          "size": 5896694
+          "iv": "Zjt05T9PduB9jA7R",
+          "size": 9892752
         },
         "guestBg": {
           "path": "assets/rajul-hi-guestBg.bin",
-          "iv": "v/Masf0Xr7mx2Pu9",
+          "iv": "FhoboY2UZNAEpyet",
           "size": 6842948
         },
         "rsvpBg": {
           "path": "assets/rajul-hi-rsvpBg.bin",
-          "iv": "kG88N8SbjUc7ZitU",
+          "iv": "1t96V7wgpHXoG4gt",
           "size": 1331651
         },
         "music": {
           "path": "assets/rajul-hi-music.bin",
-          "iv": "Xpv0cj630NLwikbV",
+          "iv": "9XXRQfy3FGydNc5t",
           "size": 718584
         }
       }
@@ -95,7 +95,7 @@
       "lang": "en",
       "guest": {
         "cx": 428,
-        "cy": 322
+        "bottom": 430
       },
       "totalSeconds": 38.7,
       "guestSeconds": 7.5,
@@ -103,27 +103,27 @@
       "files": {
         "partA": {
           "path": "assets/dolly-en-partA.bin",
-          "iv": "jixlC5wn8wb0RrKS",
-          "size": 205826
+          "iv": "tgJP6NOCBDvLdKMQ",
+          "size": 346761
         },
         "partB": {
           "path": "assets/dolly-en-partB.bin",
-          "iv": "FdlbhV89Y44WYQyC",
-          "size": 4669885
+          "iv": "uz7svG3Ac6leY5Ir",
+          "size": 8275087
         },
         "guestBg": {
           "path": "assets/dolly-en-guestBg.bin",
-          "iv": "MKqPwuM73Y5UR3MR",
+          "iv": "NolDriFC4SJPTZIb",
           "size": 6393025
         },
         "rsvpBg": {
           "path": "assets/dolly-en-rsvpBg.bin",
-          "iv": "BA0VNCMA9Oqpc6jW",
+          "iv": "zMvWoR1gnHJRNVJi",
           "size": 2199183
         },
         "music": {
           "path": "assets/dolly-en-music.bin",
-          "iv": "ICgQm5nJGc9HZK+v",
+          "iv": "zPlCybmUsHkvZlpc",
           "size": 633954
         }
       }
@@ -135,7 +135,7 @@
       "lang": "hi",
       "guest": {
         "cx": 427,
-        "cy": 322
+        "bottom": 428
       },
       "totalSeconds": 38.7,
       "guestSeconds": 7.5,
@@ -143,30 +143,35 @@
       "files": {
         "partA": {
           "path": "assets/dolly-hi-partA.bin",
-          "iv": "Y2ExTwYakr80uWpt",
-          "size": 205222
+          "iv": "TSY7xDCz7fQTCQ1r",
+          "size": 345087
         },
         "partB": {
           "path": "assets/dolly-hi-partB.bin",
-          "iv": "3PaR5J+VVhWDQVen",
-          "size": 4613299
+          "iv": "nqbI3iRCn+iCJqxN",
+          "size": 8061680
         },
         "guestBg": {
           "path": "assets/dolly-hi-guestBg.bin",
-          "iv": "8KS557pL0h+6ap0d",
+          "iv": "bE32hcT1OqG1azQh",
           "size": 6584094
         },
         "rsvpBg": {
           "path": "assets/dolly-hi-rsvpBg.bin",
-          "iv": "WV0ZZiCmG3Q7dd0l",
+          "iv": "RuKTwPwb+ykKSSOO",
           "size": 1331651
         },
         "music": {
           "path": "assets/dolly-hi-music.bin",
-          "iv": "wSMKHBzqkBGobwVl",
+          "iv": "oTuh6luhrRG8L5iC",
           "size": 633954
         }
       }
     }
-  ]
+  ],
+  "hero": {
+    "path": "assets/hero.bin",
+    "iv": "7XaMtdv4TJsO+3Tc",
+    "size": 106141
+  }
 }

@@ -9,7 +9,7 @@ const W = 720, H = 1280, FPS = 30;
 const X264_LEVEL = "3.1";
 const X264_PARAMS = "cabac=1:ref=2:deblock=0,0:8x8dct=1:cqm=flat:chroma-qp-offset=-2:bframes=3:" +
   "b-pyramid=normal:weightb=1:weightp=1:keyint=250:keyint-min=25:open-gop=0:" +
-  "me=dia:subme=1:trellis=0:rc-lookahead=10:crf=28";
+  "me=dia:subme=1:trellis=0:rc-lookahead=10:crf=24";
 
 const $ = (id) => document.getElementById(id);
 const steps = ["step-lock", "step-form", "step-progress", "step-result", "step-error"];
@@ -47,68 +47,106 @@ $("lock-form").addEventListener("submit", async (e) => {
     catch { key = null; throw new Error("Wrong password. Please try again."); }
     renderTemplates();
     renderContacts();
+    showHero();
     show("step-form");
     warmUp(); // start downloading the engine while the form is filled in
   } catch (ex) {
     err.textContent = ex.message; err.hidden = false;
   } finally {
-    btn.disabled = false; btn.textContent = "Unlock";
+    btn.disabled = false; btn.textContent = "Open the studio";
   }
 });
 
+async function showHero() {
+  if (!manifest.hero) return;
+  try {
+    const img = await decrypt(manifest.hero.iv, await fetchBytes(manifest.hero.path, manifest.hero.size));
+    $("hero-img").src = URL.createObjectURL(new Blob([img], { type: "image/jpeg" }));
+    $("hero").hidden = false;
+  } catch { /* the photo is decoration only */ }
+}
+
 // ---------- form ----------
+const CHOICES = {
+  rajul: ["Rajul’s family", "राजुल पक्ष"], dolly: ["Dolly’s family", "डौली पक्ष"],
+  en: ["English", "Dear …"], hi: ["हिन्दी", "प्रिय …"],
+};
 function renderTemplates() {
   const sides = [...new Set(manifest.templates.map((t) => t.side))];
   const langs = [...new Set(manifest.templates.map((t) => t.lang))];
-  const LABEL = { rajul: "Rajul", dolly: "Dolly", en: "English", hi: "हिन्दी (Hindi)" };
   const group = (box, name, values) => box.replaceChildren(...values.map((v, i) => {
-    const label = document.createElement("label");
+    const label = Object.assign(document.createElement("label"), { className: "tile" });
     const input = Object.assign(document.createElement("input"), { type: "radio", name, value: v, checked: i === 0 });
-    label.append(input, document.createTextNode(LABEL[v] || v));
+    const [title, sub] = CHOICES[v] || [v, ""];
+    const t = Object.assign(document.createElement("span"), { className: "tile-title", textContent: title });
+    const st = Object.assign(document.createElement("span"), { className: "tile-sub", textContent: sub });
+    label.append(input, t, st);
     return label;
   }));
   group($("side-list"), "side", sides);
   group($("lang-list"), "lang", langs);
 }
 
+// RSVP contacts: the family contacts are built in; extra ones are saved on this device.
+const PRESETS = [
+  { id: "p-rajul", name: "Rajul", hi: "राजुल", phone: "+91 82907 34790" },
+  { id: "p-swati", name: "Swati", hi: "स्वाति", phone: "+91 73021 57156" },
+  { id: "p-sushil", name: "Sushil", hi: "सुशील", phone: "+91 96301 09100" },
+];
 const CONTACTS_KEY = "invite-studio:rsvp-contacts";
 function loadContacts() {
-  try { return JSON.parse(localStorage.getItem(CONTACTS_KEY)) || []; } catch { return []; }
+  try { return (JSON.parse(localStorage.getItem(CONTACTS_KEY)) || []).filter((c) => c?.name && c?.phone); } catch { return []; }
 }
 function storeContacts(list) {
   try { localStorage.setItem(CONTACTS_KEY, JSON.stringify(list)); } catch { /* private mode: skip saving */ }
 }
-function renderContacts() {
-  const box = $("saved-contacts");
-  const contacts = loadContacts();
-  box.replaceChildren(...contacts.map((c, i) => {
-    const chip = Object.assign(document.createElement("span"), { className: "chip", role: "button", tabIndex: 0 });
-    chip.textContent = `${c.name} · ${c.phone}`;
-    const pick = () => { $("rsvp-name").value = c.name; $("rsvp-phone").value = c.phone; };
-    chip.addEventListener("click", pick);
-    chip.addEventListener("keydown", (e) => { if (e.key === "Enter") pick(); });
-    const x = Object.assign(document.createElement("button"), { type: "button", className: "x", textContent: "×", title: "Remove" });
-    x.addEventListener("click", (e) => { e.stopPropagation(); storeContacts(contacts.filter((_, j) => j !== i)); renderContacts(); });
-    chip.append(x);
-    return chip;
-  }));
-  if (!contacts.length) box.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "No saved contacts yet." }));
+const currentSide = () => document.querySelector('input[name="side"]:checked')?.value || "rajul";
+const DEFAULT_CONTACT = "p-rajul";
+function renderContacts(selectId) {
+  const sel = $("rsvp-select"), saved = loadContacts();
+  const opt = (value, text) => Object.assign(document.createElement("option"), { value, textContent: text });
+  const fam = Object.assign(document.createElement("optgroup"), { label: "Family contacts" });
+  fam.append(...PRESETS.map((p) => opt(p.id, `${p.name} · ${p.phone}`)));
+  const groups = [fam];
+  if (saved.length) {
+    const mine = Object.assign(document.createElement("optgroup"), { label: "Saved on this phone" });
+    mine.append(...saved.map((c, i) => opt(`s-${i}`, `${c.name} · ${c.phone}`)));
+    groups.push(mine);
+  }
+  sel.replaceChildren(...groups, opt("__new", "＋ Add another contact"));
+  const wanted = selectId ?? (sel.dataset.last || DEFAULT_CONTACT);
+  sel.value = [...sel.options].some((o) => o.value === wanted) ? wanted : DEFAULT_CONTACT;
+  updateContactUI();
 }
+function updateContactUI() {
+  const v = $("rsvp-select").value;
+  $("rsvp-select").dataset.last = v;
+  $("new-contact").hidden = v !== "__new";
+  $("remove-contact").hidden = !v.startsWith("s-");
+  if (v === "__new") setTimeout(() => $("rsvp-name").focus(), 0);
+}
+$("rsvp-select").addEventListener("change", updateContactUI);
+$("remove-contact").addEventListener("click", () => {
+  const i = Number($("rsvp-select").value.slice(2));
+  storeContacts(loadContacts().filter((_, j) => j !== i));
+  renderContacts(DEFAULT_CONTACT);
+});
 
+const clean = (s) => s.trim().replace(/\s+/g, " ");
 function readForm() {
-  const side = document.querySelector('input[name="side"]:checked')?.value;
+  const side = currentSide();
   const lang = document.querySelector('input[name="lang"]:checked')?.value;
-  const v = {
-    templateId: manifest.templates.find((t) => t.side === side && t.lang === lang)?.id,
-    guest: $("guest").value.trim().replace(/\s+/g, " "),
-    rsvpName: $("rsvp-name").value.trim().replace(/\s+/g, " "),
-    rsvpPhone: $("rsvp-phone").value.trim().replace(/\s+/g, " "),
-  };
-  if (!v.templateId) return [null, "Please choose Rajul/Dolly and the language."];
+  const pick = $("rsvp-select").value;
+  let rsvpName, rsvpPhone;
+  if (pick === "__new") { rsvpName = clean($("rsvp-name").value); rsvpPhone = clean($("rsvp-phone").value); }
+  else if (pick.startsWith("p-")) { const p = PRESETS.find((x) => x.id === pick); rsvpName = lang === "hi" ? p.hi : p.name; rsvpPhone = p.phone; }
+  else { const c = loadContacts()[Number(pick.slice(2))]; rsvpName = c?.name; rsvpPhone = c?.phone; }
+  const v = { templateId: manifest.templates.find((t) => t.side === side && t.lang === lang)?.id, guest: clean($("guest").value), rsvpName, rsvpPhone };
+  if (!v.templateId) return [null, "Please choose the family and the language."];
   if (!v.guest) return [null, "Please enter the guest name."];
   if (!v.rsvpName) return [null, "Please enter the RSVP contact name."];
-  const digits = v.rsvpPhone.replace(/\D/g, "");
-  if (!/^[+\d][\d\s()-]*$/.test(v.rsvpPhone) || digits.length < 7 || digits.length > 15)
+  const digits = (v.rsvpPhone || "").replace(/\D/g, "");
+  if (!/^[+\d][\d\s()-]*$/.test(v.rsvpPhone || "") || digits.length < 7 || digits.length > 15)
     return [null, "Please enter a valid phone number (7–15 digits, may start with +)."];
   return [v, null];
 }
@@ -118,14 +156,16 @@ $("invite-form").addEventListener("submit", async (e) => {
   const [values, problem] = readForm();
   $("form-error").hidden = !problem;
   if (problem) { $("form-error").textContent = problem; return; }
-  if ($("save-contact").checked) {
+  if ($("rsvp-select").value === "__new" && $("save-contact").checked) {
     const others = loadContacts().filter((c) => c.phone !== values.rsvpPhone);
     storeContacts([{ name: values.rsvpName, phone: values.rsvpPhone }, ...others].slice(0, 12));
+    $("rsvp-name").value = ""; $("rsvp-phone").value = "";
+    renderContacts("s-0");
   }
   await generate(values);
 });
 
-$("again-btn").addEventListener("click", () => { renderContacts(); show("step-form"); });
+$("again-btn").addEventListener("click", () => { $("guest").value = ""; renderContacts(); show("step-form"); $("guest").focus(); });
 $("retry-btn").addEventListener("click", () => show(key ? "step-form" : "step-lock"));
 
 // ---------- progress ----------
@@ -226,7 +266,7 @@ const nameFont = (s) => `400 ${s}px ${NAME_FONT}`;   // Playball has one weight;
 // "Dear <guest>" in the empty top of the guest-page arch: gold "Dear", bold navy script name, soft shadow.
 function guestLayer(t, guest) {
   const [c, ctx] = layer();
-  const { cx, cy } = t.guest, maxW = 330;
+  const { cx } = t.guest, maxW = 330;
   const width = (s, txt) => { ctx.font = nameFont(s); return ctx.measureText(txt).width; };
   let size = 66, lines = [guest];
   while (width(size, guest) > maxW && size > 40) size -= 2;
@@ -241,16 +281,21 @@ function guestLayer(t, guest) {
     size = 60;
     while (Math.max(...lines.map((l) => width(size, l))) > maxW && size > 34) size -= 2;
   }
+  // Bottom-anchored: the lowest ink sits GAP px above the gold divider over "You are cordially invited…",
+  // and "Dear" sits the same GAP above the name, matching the line spacing of the printed page.
+  const GAP = 9, lh = Math.round(size * 1.05);
   ctx.font = nameFont(size);
-  const asc = ctx.measureText("Hg").fontBoundingBoxAscent || size * 0.9;
-  const lh = Math.round(size * 1.05), dearH = 30, gap = 16;
-  const top = cy - Math.floor((dearH + gap + asc + lh * (lines.length - 1)) / 2);
-  ctx.font = DEAR_FONT[t.lang]; ctx.fillStyle = GOLD;
-  ctx.fillText(DEAR_WORD[t.lang], cx, top + dearH);
-  const base = top + dearH + gap + asc * 0.85;
+  const m = lines.map((l) => ctx.measureText(l));
+  const lastBase = t.guest.bottom - GAP - m[m.length - 1].actualBoundingBoxDescent;
+  const firstBase = lastBase - lh * (lines.length - 1);
+  ctx.font = DEAR_FONT[t.lang];
+  const dm = ctx.measureText(DEAR_WORD[t.lang]);
+  const dearBase = firstBase - m[0].actualBoundingBoxAscent - GAP - dm.actualBoundingBoxDescent;
+  ctx.fillStyle = GOLD;
+  ctx.fillText(DEAR_WORD[t.lang], cx, dearBase);
   ctx.font = nameFont(size); ctx.fillStyle = NAVY;
   ctx.shadowColor = "rgba(14,34,96,0.28)"; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.shadowBlur = 3;
-  lines.forEach((l, i) => ctx.fillText(l, cx, base + i * lh));
+  lines.forEach((l, i) => ctx.fillText(l, cx, firstBase + i * lh));
   return c;
 }
 
@@ -377,8 +422,9 @@ function showResult(bytes, values, seconds, timings) {
   $("preview").src = resultUrl;
   const dl = $("download-btn");
   dl.href = resultUrl; dl.download = filename;
-  $("result-meta").textContent = `${(bytes.length / 1048576).toFixed(1)} MB · made in ${seconds}s ` +
-    `(engine ${timings.engine}s, video ${timings.assets}s, names ${timings.encode}s, join ${timings.join}s)`;
+  $("result-guest").textContent = values.guest;
+  $("result-meta").textContent = `${(bytes.length / 1048576).toFixed(1)} MB · ready in ${seconds} s`;
+  console.log("timings", timings);
   const file = new File([blob], filename, { type: "video/mp4" });
   const share = $("share-btn");
   share.hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));

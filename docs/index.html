@@ -4,81 +4,93 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
-  <title>Invite Studio</title>
+  <meta name="theme-color" content="#6e1423">
+  <title>Dolly &amp; Rajul · Wedding Invitations</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%236e1423'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23e8c66f' font-family='serif'%3E%E0%A5%90%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=Kalam:wght@700&family=Noto+Serif+Devanagari:wght@400;600&family=Playball&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=Kalam:wght@700&family=Noto+Serif+Devanagari:wght@400;600&family=Playball&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="toran" aria-hidden="true"></div>
+
   <main class="shell">
     <header class="brand">
-      <p class="eyebrow">Rajul &amp; Dolly</p>
-      <h1>Invite Studio</h1>
-      <p class="tag">Personalised wedding invitation videos</p>
+      <p class="mantra">॥ श्री गणेशाय नमः ॥</p>
+      <h1 class="couple">Dolly <span class="amp">&amp;</span> Rajul</h1>
+      <div class="ornament" aria-hidden="true">
+        <svg viewBox="0 0 240 24" width="240" height="24"><path d="M4 12h86M150 12h86" stroke="currentColor" stroke-width="1.4"/><path d="M120 2l7 10-7 10-7-10z" fill="currentColor"/><circle cx="100" cy="12" r="3" fill="currentColor"/><circle cx="140" cy="12" r="3" fill="currentColor"/><path d="M90 12c4-6 8-6 10 0M150 12c-4-6-8-6-10 0" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>
+      </div>
+      <p class="date">Saturday · 21 November 2026 · Rishikesh</p>
     </header>
 
     <!-- Step 1: password -->
-    <section id="step-lock" class="card">
-      <h2>Enter password</h2>
+    <section id="step-lock" class="card arch-card">
+      <p class="eyebrow">Welcome, family</p>
+      <h2>Wedding invitation studio</h2>
+      <p class="lead">Create a personal invitation video for every guest, ready to send on WhatsApp.</p>
       <form id="lock-form" autocomplete="off">
-        <label for="password">Password</label>
+        <label for="password">Family password</label>
         <input id="password" type="password" autocomplete="current-password" required>
-        <button type="submit" class="primary" id="unlock-btn">Unlock</button>
+        <button type="submit" class="primary" id="unlock-btn">Open the studio</button>
         <p class="error" id="lock-error" hidden></p>
       </form>
     </section>
 
     <!-- Step 2: details -->
     <section id="step-form" class="card" hidden>
-      <h2>Personalise the invitation</h2>
+      <figure id="hero" class="hero" hidden>
+        <div class="arch-frame"><img id="hero-img" alt="Dolly and Rajul"></div>
+      </figure>
+      <p class="eyebrow">New invitation</p>
+      <h2>Who is it for?</h2>
       <form id="invite-form" novalidate>
-        <fieldset>
-          <legend>Invitation from</legend>
-          <div id="side-list" class="radio-list inline"></div>
-        </fieldset>
-        <fieldset>
-          <legend>Language</legend>
-          <div id="lang-list" class="radio-list inline"></div>
-        </fieldset>
+        <p class="field-label">Invitation from</p>
+        <div id="side-list" class="tiles" role="radiogroup" aria-label="Invitation from"></div>
 
-        <label for="guest">Guest name</label>
+        <p class="field-label">Language</p>
+        <div id="lang-list" class="tiles" role="radiogroup" aria-label="Language"></div>
+
+        <label for="guest" class="field-label">Guest name</label>
         <input id="guest" maxlength="40" placeholder="e.g. Sharma Family" required>
-        <p class="hint">Shown as “Dear …” on the invitation page (“प्रिय …” in Hindi).</p>
+        <p class="hint">Appears as “Dear …” on the invitation page (“प्रिय …” in Hindi).</p>
 
-
-        <fieldset>
-          <legend>RSVP contact</legend>
-          <div id="saved-contacts" class="chips" aria-label="Saved contacts"></div>
+        <label for="rsvp-select" class="field-label">RSVP contact</label>
+        <div class="select-wrap"><select id="rsvp-select"></select></div>
+        <button type="button" id="remove-contact" class="link" hidden>Remove this saved contact</button>
+        <div id="new-contact" class="new-contact" hidden>
           <label for="rsvp-name">Name</label>
-          <input id="rsvp-name" maxlength="40" placeholder="e.g. Rajul Shakywar" required>
+          <input id="rsvp-name" maxlength="40" placeholder="e.g. Neha">
           <label for="rsvp-phone">Phone number</label>
-          <input id="rsvp-phone" type="tel" inputmode="tel" maxlength="20" placeholder="e.g. +91 98765 43210" required>
+          <input id="rsvp-phone" type="tel" inputmode="tel" maxlength="20" placeholder="e.g. +91 98765 43210">
           <label class="check"><input type="checkbox" id="save-contact" checked> Save this contact for next time</label>
-        </fieldset>
+        </div>
 
         <p class="error" id="form-error" hidden></p>
-        <button type="submit" class="primary" id="generate-btn">Generate video</button>
+        <button type="submit" class="primary" id="generate-btn">Create invitation video</button>
       </form>
     </section>
 
     <!-- Step 3: progress -->
-    <section id="step-progress" class="card" hidden>
-      <h2>Creating the video…</h2>
+    <section id="step-progress" class="card center" hidden>
+      <div class="mandala" aria-hidden="true"></div>
+      <h2>Preparing the invitation…</h2>
       <p id="progress-label" class="progress-label">Starting</p>
       <div class="bar"><div id="progress-fill"></div></div>
-      <p class="hint">Keep this screen open. The first run downloads the video engine (about 32 MB, once). Later runs are faster.</p>
+      <p class="hint">Please keep this screen open. The first time takes a little longer while the studio loads.</p>
     </section>
 
     <!-- Step 4: result -->
-    <section id="step-result" class="card" hidden>
-      <h2>Preview</h2>
-      <video id="preview" controls playsinline preload="metadata"></video>
+    <section id="step-result" class="card center" hidden>
+      <p class="eyebrow">Ready to send</p>
+      <h2 class="result-title">Invitation for <span id="result-guest"></span></h2>
+      <div class="video-frame"><video id="preview" controls playsinline preload="metadata"></video></div>
       <p id="result-meta" class="hint"></p>
       <div class="actions">
-        <a id="download-btn" class="primary button" download>Download MP4</a>
-        <button id="share-btn" class="secondary" hidden>Share…</button>
-        <button id="again-btn" class="secondary">Make another</button>
+        <a id="download-btn" class="primary button" download>Download video</a>
+        <button id="share-btn" class="secondary" hidden>Share on WhatsApp…</button>
+        <button id="again-btn" class="secondary">Make another invitation</button>
       </div>
     </section>
 
@@ -89,6 +101,11 @@
       <details><summary>Technical details</summary><pre id="error-log"></pre></details>
       <button id="retry-btn" class="primary">Back to the form</button>
     </section>
+
+    <footer class="foot">
+      <p>Made with love for the wedding of</p>
+      <p class="foot-names">Dolly &amp; Rajul</p>
+    </footer>
   </main>
   <script type="module" src="app.js"></script>
 </body>
