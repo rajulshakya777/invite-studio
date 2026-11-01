@@ -178,4 +178,18 @@ details { margin-top: 10px; }
 .foot { text-align: center; margin-top: 28px; color: var(--muted); font-style: italic; font-size: 15px; }
 .foot p { margin: 0; }
 .foot-names { font: 400 30px "Great Vibes", cursive; color: var(--gold); font-style: normal; }
+/* share icons */
+.share-title { margin: 22px 0 10px; font: 600 13px "Cinzel", serif; letter-spacing: .12em; text-transform: uppercase; color: var(--maroon); }
+.share-row { display: flex; justify-content: center; gap: 22px; }
+.share { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; border: 0; background: none; border-radius: 12px; }
+.share-icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--ivory), 0 0 0 4px var(--gold-2), 0 6px 14px rgba(110, 20, 35, .22); transition: transform .15s; }
+.share-icon svg { width: 32px; height: 32px; }
+.share:active .share-icon { transform: scale(.94); }
+.share:focus-visible { outline: 2px solid var(--maroon); outline-offset: 4px; }
+.wa { background: #25d366; }
+.fb { background: #1877f2; }
+.ig { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%); }
+.share-name { font: italic 400 16px "Cormorant Garamond", serif; color: var(--ink); }
+.share-note { margin-top: 12px; }
 [hidden] { display: none !important; }

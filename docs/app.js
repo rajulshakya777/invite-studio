@@ -565,8 +565,25 @@ function showResult(bytes, values, seconds, timings) {
   $("result-meta").textContent = `${(bytes.length / 1048576).toFixed(1)} MB · ready in ${seconds} s`;
   console.log("timings", timings);
   const file = new File([blob], filename, { type: "video/mp4" });
-  const share = $("share-btn");
-  share.hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
-  share.onclick = () => navigator.share({ files: [file], title: "Wedding invitation" }).catch(() => {});
+  // Websites can't hand a video straight to one app: on phones each icon opens the share sheet with the
+  // video attached (pick the app there); elsewhere the video is saved so it can be attached in the app.
+  const canShareFile = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+  $("share-note").hidden = true;
+  document.querySelectorAll(".share").forEach((btn) => {
+    btn.onclick = async () => {
+      const app = btn.dataset.app, note = $("share-note");
+      if (canShareFile) {
+        try { await navigator.share({ files: [file] }); note.hidden = true; }
+        catch (ex) {
+          if (ex?.name === "AbortError") return;
+          dl.click(); note.textContent = `The video is saved. Open ${app} and attach it from your gallery or files.`; note.hidden = false;
+        }
+        return;
+      }
+      dl.click();
+      note.textContent = `The video is saved to your downloads. Open ${app} and attach it from there.`;
+      note.hidden = false;
+    };
+  });
   show("step-result");
 }
