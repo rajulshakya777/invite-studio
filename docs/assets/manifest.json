@@ -1,11 +1,11 @@
 {
   "kdf": {
-    "salt": "Bt4JAildyzxboECpP/kYCg==",
+    "salt": "+3XgyNT+NS5UcnObhHVMrw==",
     "iterations": 250000
   },
   "check": {
-    "iv": "DXJ+4WVJQma8Jdjh",
-    "ct": "fljDjoueHtj86tJ2JoWteYyj"
+    "iv": "pjsXE0FyR9GlEJAO",
+    "ct": "ormGQL1HdVk37F0HN1jkZn4v"
   },
   "templates": [
     {
@@ -25,27 +25,27 @@
       "files": {
         "partA": {
           "path": "assets/rajul-en-partA.bin",
-          "iv": "4RELAgoT5Cd+Pett",
+          "iv": "HdGrFqGbJ85WgApt",
           "size": 356661
         },
         "partB": {
           "path": "assets/rajul-en-partB.bin",
-          "iv": "6yMRjXk0X6lEr0hk",
-          "size": 11388323
+          "iv": "E6Zn6+ehVuHpzFpU",
+          "size": 10102110
         },
         "guestBg": {
           "path": "assets/rajul-en-guestBg.bin",
-          "iv": "I2dSfezzyjBNzvfL",
+          "iv": "Rb8cLc9BMejqAgwT",
           "size": 6679425
         },
         "rsvpBg": {
           "path": "assets/rajul-en-rsvpBg.bin",
-          "iv": "NS5xft8XZIFP7U4I",
+          "iv": "eaI+6p5q9IlPCFNE",
           "size": 2687377
         },
         "music": {
           "path": "assets/rajul-en-music.bin",
-          "iv": "eN5sHEu7QR83o/Pa",
+          "iv": "if0aHzlZg8yt2y0B",
           "size": 745282
         }
       }
@@ -67,27 +67,27 @@
       "files": {
         "partA": {
           "path": "assets/rajul-hi-partA.bin",
-          "iv": "H/gKNY/eng8F3Gs3",
+          "iv": "t9LOK5aEd+hUHAss",
           "size": 355604
         },
         "partB": {
           "path": "assets/rajul-hi-partB.bin",
-          "iv": "t03Vqkkxa9e4vISD",
-          "size": 9892752
+          "iv": "xJgfvZNzidcw2aSl",
+          "size": 9033498
         },
         "guestBg": {
           "path": "assets/rajul-hi-guestBg.bin",
-          "iv": "Qs3Y4GJ1vM2DBcA4",
+          "iv": "pRZOBHz1FQLF07WI",
           "size": 6477845
         },
         "rsvpBg": {
           "path": "assets/rajul-hi-rsvpBg.bin",
-          "iv": "+lxr2UbFT5w4DjLG",
+          "iv": "fjnKrOlhyhrbujHW",
           "size": 2282324
         },
         "music": {
           "path": "assets/rajul-hi-music.bin",
-          "iv": "hHSNLGnYn1N+68Q7",
+          "iv": "IT3UW7iYJDl1s30c",
           "size": 745282
         }
       }
@@ -109,27 +109,27 @@
       "files": {
         "partA": {
           "path": "assets/dolly-en-partA.bin",
-          "iv": "iQp9bewC4B4ei0h6",
+          "iv": "DFpXO0fiRiXgDX73",
           "size": 356661
         },
         "partB": {
           "path": "assets/dolly-en-partB.bin",
-          "iv": "qIpSLcvZ2pvtmMBy",
-          "size": 8275087
+          "iv": "JnMbYBmiAZZcLy9I",
+          "size": 7446046
         },
         "guestBg": {
           "path": "assets/dolly-en-guestBg.bin",
-          "iv": "klyOgXCqcammP+Pp",
+          "iv": "Fy4QIazzVhrWaACK",
           "size": 6376891
         },
         "rsvpBg": {
           "path": "assets/dolly-en-rsvpBg.bin",
-          "iv": "rwKci1GJXc5RnfUZ",
+          "iv": "d8Iw6HNgMnXEBAxx",
           "size": 2687377
         },
         "music": {
           "path": "assets/dolly-en-music.bin",
-          "iv": "ZSqYjk3ouHVGm9u1",
+          "iv": "G6QydAJQJ2VFOGf+",
           "size": 660462
         }
       }
@@ -151,29 +151,135 @@
       "files": {
         "partA": {
           "path": "assets/dolly-hi-partA.bin",
-          "iv": "ZW0q2xhInsm4s4fX",
+          "iv": "f/0N0i4qYBAekUpn",
           "size": 355604
         },
         "partB": {
           "path": "assets/dolly-hi-partB.bin",
-          "iv": "2+lmapICRtIR8f2a",
-          "size": 8061680
+          "iv": "e1eRq7hJSnzMUG+Y",
+          "size": 7312911
         },
         "guestBg": {
           "path": "assets/dolly-hi-guestBg.bin",
-          "iv": "/onp5LnOSZz7Yc/V",
+          "iv": "w40kVOSYgKDdT9Aq",
           "size": 6503937
         },
         "rsvpBg": {
           "path": "assets/dolly-hi-rsvpBg.bin",
-          "iv": "hind6+ObiEp1gm3I",
+          "iv": "qt7QDFcNW7bDmr1B",
           "size": 2282324
         },
         "music": {
           "path": "assets/dolly-hi-music.bin",
-          "iv": "6dGtAD2ZNoaosboH",
+          "iv": "gmlTUX0G7cty23Zh",
           "size": 660462
         }
+      }
+    }
+  ],
+  "cards": [
+    {
+      "id": "rajul-en",
+      "label": "Rajul – English",
+      "side": "rajul",
+      "lang": "en",
+      "box": {
+        "width": 2160,
+        "height": 3840,
+        "cx": 1080,
+        "top": 988,
+        "bottom": 1164,
+        "maxW": 1080,
+        "color": "#1f2f6b",
+        "font": "'Great Vibes'",
+        "maxSize": 136,
+        "minOne": 100,
+        "maxTwo": 86,
+        "lh": 0.94
+      },
+      "file": {
+        "path": "assets/rajul-en-card.bin",
+        "iv": "nA0+B9Nw+9QdPkTU",
+        "size": 3041911,
+        "type": "image/jpeg"
+      }
+    },
+    {
+      "id": "rajul-hi",
+      "label": "Rajul – Hindi",
+      "side": "rajul",
+      "lang": "hi",
+      "box": {
+        "width": 2160,
+        "height": 3840,
+        "cx": 1080,
+        "top": 992,
+        "bottom": 1188,
+        "maxW": 1080,
+        "color": "#1f2f6b",
+        "font": "'Tiro Devanagari Hindi'",
+        "maxSize": 116,
+        "minOne": 90,
+        "maxTwo": 78,
+        "lh": 1.08
+      },
+      "file": {
+        "path": "assets/rajul-hi-card.bin",
+        "iv": "hvSZnEwfPsp7eKaq",
+        "size": 3001354,
+        "type": "image/jpeg"
+      }
+    },
+    {
+      "id": "dolly-en",
+      "label": "Dolly – English",
+      "side": "dolly",
+      "lang": "en",
+      "box": {
+        "width": 2160,
+        "height": 3840,
+        "cx": 1080,
+        "top": 988,
+        "bottom": 1164,
+        "maxW": 1080,
+        "color": "#1f2f6b",
+        "font": "'Great Vibes'",
+        "maxSize": 136,
+        "minOne": 100,
+        "maxTwo": 86,
+        "lh": 0.94
+      },
+      "file": {
+        "path": "assets/dolly-en-card.bin",
+        "iv": "5SMpXm1gvNHIBzGc",
+        "size": 3016430,
+        "type": "image/jpeg"
+      }
+    },
+    {
+      "id": "dolly-hi",
+      "label": "Dolly – Hindi",
+      "side": "dolly",
+      "lang": "hi",
+      "box": {
+        "width": 2160,
+        "height": 3840,
+        "cx": 1080,
+        "top": 992,
+        "bottom": 1188,
+        "maxW": 1080,
+        "color": "#1f2f6b",
+        "font": "'Tiro Devanagari Hindi'",
+        "maxSize": 116,
+        "minOne": 90,
+        "maxTwo": 78,
+        "lh": 1.08
+      },
+      "file": {
+        "path": "assets/dolly-hi-card.bin",
+        "iv": "U5IXVLgDBXGUtr9d",
+        "size": 2976596,
+        "type": "image/jpeg"
       }
     }
   ]

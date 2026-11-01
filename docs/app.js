@@ -13,10 +13,11 @@ const X264_PARAMS = "cabac=1:ref=2:deblock=0,0:8x8dct=1:cqm=flat:chroma-qp-offse
   "aq-mode=0:psy=0:crf=24";
 
 const $ = (id) => document.getElementById(id);
-const steps = ["step-lock", "step-form", "step-progress", "step-result", "step-error"];
+const steps = ["step-lock", "step-kind", "step-form", "step-progress", "step-result", "step-error"];
 function show(step) { for (const s of steps) $(s).hidden = s !== step; window.scrollTo(0, 0); }
 
 let manifest, key, logTail = [], resultUrl = null;
+let mode = "video"; // "video" or "card"
 const assetCache = new Map();
 
 // ---------- password / decryption ----------
@@ -49,13 +50,36 @@ $("lock-form").addEventListener("submit", async (e) => {
     renderTemplates();
     renderContacts();
     updateLangUI();
-    show("step-form");
-    warmUp(); // start the engines and fetch the chosen video while the form is filled in
+    if (manifest.cards?.length) show("step-kind");
+    else { $("kind-card-tile").hidden = true; startMode("video"); }
   } catch (ex) {
     err.textContent = ex.message; err.hidden = false;
   } finally {
     btn.disabled = false; btn.textContent = "Open the studio";
   }
+});
+
+// ---------- video or card ----------
+// Both products share the family / language / guest-name form; the card has no RSVP contact.
+function startMode(m) {
+  mode = m;
+  const card = mode === "card";
+  $("form-kind").textContent = card ? "Card invite" : "Video invite";
+  $("change-kind").hidden = !manifest.cards?.length;
+  $("rsvp-block").hidden = card;
+  // the card fits up to two lines of name; the video page keeps its original 40-character limit
+  for (const id of ["guest", "guest-hi"]) $(id).maxLength = card ? 60 : 40;
+  $("generate-btn").textContent = card ? "Create invitation card" : "Create invitation video";
+  $("guest-hint").textContent = card ? "Appears under “Dear” on the card." : "Appears as “Dear …” on the invitation page.";
+  $("form-error").hidden = true;
+  show("step-form");
+  if (card) prefetchChosen();
+  else warmUp(); // start the engines and fetch the chosen video while the form is filled in
+}
+$("kind-next").addEventListener("click", () => startMode(document.querySelector('input[name="kind"]:checked')?.value || "video"));
+$("change-kind").addEventListener("click", () => {
+  document.querySelector(`input[name="kind"][value="${mode}"]`).checked = true;
+  show("step-kind");
 });
 
 // ---------- form ----------
@@ -203,16 +227,19 @@ async function readForm() {
   else if (pick.startsWith("p-")) contact = PRESETS.find((x) => x.id === pick);
   else contact = loadContacts()[Number(pick.slice(2))] || {};
   let guest = clean($("guest").value);
-  const templateId = manifest.templates.find((t) => t.side === side && t.lang === lang)?.id;
+  const list = mode === "card" ? manifest.cards : manifest.templates;
+  const templateId = list.find((t) => t.side === side && t.lang === lang)?.id;
   if (!templateId) return [null, "Please choose the family and the language."];
   if (!guest && !(lang === "hi" && clean($("guest-hi").value))) return [null, "Please enter the guest name."];
-  if (!contact.name) return [null, "Please enter the RSVP contact name."];
+  if (mode !== "card" && !contact.name) return [null, "Please enter the RSVP contact name."];
   if (lang === "hi") {
     guest = clean($("guest-hi").value) || await toHindi(guest);
     if (!guest) return [null, "Please type the guest name in Hindi."];
     $("guest-hi").value = guest;
+    if (mode === "card") return [{ cardId: templateId, guest }, null];
     if (!contact.hi) contact = { ...contact, hi: (await toHindi(contact.name)) || "" };
   }
+  if (mode === "card") return [{ cardId: templateId, guest }, null];
   const v = { templateId, guest, rsvpName: lang === "hi" ? contact.hi || contact.name : contact.name, rsvpPhone: contact.phone, contact };
   const digits = (v.rsvpPhone || "").replace(/\D/g, "");
   if (!/^[+\d][\d\s()-]*$/.test(v.rsvpPhone || "") || digits.length < 7 || digits.length > 15)
@@ -242,6 +269,7 @@ async function startFromForm() {
   const [values, problem] = await readForm();
   $("form-error").hidden = !problem;
   if (problem) { $("form-error").textContent = problem; return; }
+  if (mode === "card") return generateCard(values);
   if ($("rsvp-select").value === "__new" && $("save-contact").checked) {
     const others = loadContacts().filter((c) => c.phone !== values.rsvpPhone);
     const { name, hi, phone } = values.contact;
@@ -311,6 +339,7 @@ function warmUp() {
   prefetchChosen();
 }
 function prefetchChosen() {
+  if (mode === "card") { const c = chosenCard(); if (c) getCardBase(c).catch(() => {}); return; }
   const t = chosenTemplate();
   if (t) for (const k of ["guestBg", "rsvpBg", "partA", "partB", "music"]) getAsset(t, k).catch(() => {});
 }
@@ -539,7 +568,10 @@ async function generate(values) {
     if (!out?.length) throw new Error("The finished video came out empty.");
 
     setProgress(1, "Done");
-    showResult(out, values, ((performance.now() - started) / 1000).toFixed(1), timings);
+    console.log("timings", timings);
+    showResult(new Blob([out], { type: "video/mp4" }), values,
+      `Wedding-Invitation-${slug(clean($("guest").value) || values.guest)}.mp4`,
+      `${(out.length / 1048576).toFixed(1)} MB · ready in ${((performance.now() - started) / 1000).toFixed(1)} s`);
   } catch (ex) {
     console.error(ex);
     $("error-message").textContent = friendly(ex);
@@ -555,22 +587,120 @@ function friendly(ex) {
   return msg;
 }
 
+// ---------- card invite ----------
+// The approved card (2160x3840) is a blank base image with "Dear" / "प्रिय" already printed; the guest name is
+// drawn in navy into the box under it, using the approved fitting rules (round 7, guest-fit.js): one line at the
+// largest size up to maxSize; below minOne it tries two balanced lines (honorific "जी" kept with the name before
+// it) and uses them only if that gives a bigger name; a comma follows the name.
+function chosenCard() {
+  return manifest?.cards?.find((c) => c.side === currentSide() && c.lang === currentLang());
+}
+function getCardBase(card, onProgress) {
+  return getAsset({ id: card.id, files: { card: card.file } }, "card", onProgress);
+}
+async function loadCardFont(box, text) {
+  const faces = await document.fonts.load(`${box.maxSize}px ${box.font}`, text);
+  await document.fonts.ready;
+  if (!faces.length) throw new Error("The card lettering could not be loaded. Check the connection and try again.");
+}
+function drawCardGuest(ctx, box, rawName) {
+  const name = rawName.trim().replace(/\s+/g, " ").replace(/[,\s]+$/, "");
+  const full = `${name},`;
+  const font = (px) => `${px}px ${box.font}`;
+  const width = (s, px) => { ctx.font = font(px); return ctx.measureText(s).width; };
+  let lines = [full];
+  let size = Math.min(box.maxSize, (100 * box.maxW) / width(full, 100));
+  if (size < box.minOne) {
+    const words = full.split(" ");
+    if (words.length >= 2) {
+      let best = null;
+      for (let i = 1; i < words.length; i++) {
+        if (/^(जी|ji),?$/i.test(words[i]) && words.length > 2) continue;
+        const a = words.slice(0, i).join(" "), b = words.slice(i).join(" ");
+        const w = Math.max(width(a, 100), width(b, 100));
+        if (!best || w < best.w) best = { a, b, w };
+      }
+      const two = Math.min(box.maxTwo, (100 * box.maxW) / best.w);
+      if (two > size) { lines = [best.a, best.b]; size = two; }
+    }
+  }
+  size = Math.floor(size);
+  ctx.font = font(size);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = box.color;
+  const gap = size * box.lh;
+  const ms = lines.map((ln) => ctx.measureText(ln));
+  const asc = ms[0].actualBoundingBoxAscent, desc = ms[ms.length - 1].actualBoundingBoxDescent;
+  const first = (box.top + box.bottom) / 2 - (asc + gap * (lines.length - 1) + desc) / 2 + asc;
+  lines.forEach((ln, i) => ctx.fillText(ln, box.cx, first + i * gap));
+  return { lines, size };
+}
+async function renderCard(card, guest, onProgress) {
+  const bytes = await getCardBase(card, onProgress);
+  await loadCardFont(card.box, `${guest},`);
+  const url = URL.createObjectURL(new Blob([bytes], { type: card.file.type || "image/jpeg" }));
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const c = Object.assign(document.createElement("canvas"), { width: img.naturalWidth, height: img.naturalHeight });
+    const ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    const info = drawCardGuest(ctx, card.box, guest);
+    const blob = await new Promise((resolve, reject) => c.toBlob(
+      (b) => b ? resolve(b) : reject(new Error("Could not create the card image.")), "image/jpeg", 0.92));
+    c.width = c.height = 0; // release the canvas memory right away (phones)
+    return { blob, info, width: img.naturalWidth, height: img.naturalHeight };
+  } finally { URL.revokeObjectURL(url); }
+}
+async function generateCard(values) {
+  const card = manifest.cards.find((c) => c.id === values.cardId);
+  const started = performance.now();
+  show("step-progress");
+  setProgress(0, "Loading the card");
+  try {
+    const { blob, info, width, height } = await renderCard(card, values.guest,
+      (p) => setProgress(p * 0.8, `Loading the ${card.label} card… ${Math.round(p * 100)}%`));
+    setProgress(1, "Done");
+    console.log("card", card.id, info);
+    const seconds = ((performance.now() - started) / 1000).toFixed(1);
+    showResult(blob, values, `Wedding-Invitation-Card-${slug(clean($("guest").value) || values.guest)}.jpg`,
+      `${width}×${height} photo · ${(blob.size / 1048576).toFixed(1)} MB · ready in ${seconds} s`);
+  } catch (ex) {
+    console.error(ex);
+    $("error-message").textContent = friendly(ex);
+    $("error-log").textContent = String(ex?.stack || ex);
+    show("step-error");
+  }
+}
+
 function slug(s) { return s.normalize("NFC").replace(/[^\p{L}\p{M}\p{N}\s-]/gu, "").trim().replace(/\s+/g, "-").slice(0, 40) || "Guest"; }
 
-function showResult(bytes, values, seconds, timings) {
+function showResult(blob, values, filename, meta) {
   if (resultUrl) URL.revokeObjectURL(resultUrl);
-  const blob = new Blob([bytes], { type: "video/mp4" });
   resultUrl = URL.createObjectURL(blob);
-  const filename = `Wedding-Invitation-${slug(clean($("guest").value) || values.guest)}.mp4`;
-  $("preview").src = resultUrl;
+  const isCard = blob.type.startsWith("image/"), what = isCard ? "card" : "video";
+  $("video-frame").hidden = isCard;
+  $("card-frame").hidden = !isCard;
+  if (isCard) { $("preview").removeAttribute("src"); $("preview").load(); $("card-preview").src = resultUrl; }
+  else { $("card-preview").removeAttribute("src"); $("preview").src = resultUrl; }
   const dl = $("download-btn");
   dl.href = resultUrl; dl.download = filename;
+  dl.textContent = isCard ? "Download card" : "Download video";
+  $("again-btn").textContent = isCard ? "Make another card" : "Make another video";
+  $("other-btn").textContent = isCard ? "Make a video invite" : "Make a card invite";
+  $("other-btn").hidden = !manifest.cards?.length;
+  $("other-btn").onclick = () => {
+    $("guest").value = ""; guestHindi.reset(); renderContacts();
+    document.querySelector(`input[name="kind"][value="${isCard ? "video" : "card"}"]`).checked = true;
+    startMode(isCard ? "video" : "card"); $("guest").focus();
+  };
   $("result-guest").textContent = values.guest;
-  $("result-meta").textContent = `${(bytes.length / 1048576).toFixed(1)} MB · ready in ${seconds} s`;
-  console.log("timings", timings);
-  const file = new File([blob], filename, { type: "video/mp4" });
-  // Websites can't hand a video straight to WhatsApp: on phones the button opens the share sheet with the
-  // video attached (WhatsApp is picked there); elsewhere the video is saved so it can be attached in WhatsApp.
+  $("result-meta").textContent = meta;
+  const file = new File([blob], filename, { type: blob.type });
+  // Websites can't hand a file straight to WhatsApp: on phones the button opens the share sheet with the
+  // video/card attached (WhatsApp is picked there); elsewhere the file is saved so it can be attached in WhatsApp.
   const canShareFile = !!(navigator.canShare && navigator.canShare({ files: [file] }));
   $("share-note").hidden = true;
   $("share-btn").onclick = async () => {
@@ -580,7 +710,9 @@ function showResult(bytes, values, seconds, timings) {
       catch (ex) { if (ex?.name === "AbortError") return; }
     }
     dl.click();
-    note.textContent = "The video is saved. Open WhatsApp and attach it from your gallery or downloads.";
+    note.replaceChildren(`The ${what} is saved. `,
+      Object.assign(document.createElement("a"), { href: "https://wa.me/", target: "_blank", rel: "noopener", textContent: "Open WhatsApp" }),
+      " and attach it from your gallery or downloads.");
     note.hidden = false;
   };
   show("step-result");

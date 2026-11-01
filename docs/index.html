@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%236e1423'/%3E%3Cg fill='%23f2b8be'%3E%3Cellipse cx='32' cy='22' rx='8' ry='11'/%3E%3Cellipse cx='32' cy='22' rx='8' ry='11' transform='rotate(72 32 32)'/%3E%3Cellipse cx='32' cy='22' rx='8' ry='11' transform='rotate(144 32 32)'/%3E%3Cellipse cx='32' cy='22' rx='8' ry='11' transform='rotate(216 32 32)'/%3E%3Cellipse cx='32' cy='22' rx='8' ry='11' transform='rotate(288 32 32)'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='8' fill='%23e8c66f'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=Kalam:wght@700&family=Noto+Serif+Devanagari:wght@400;600&family=Playball&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=Kalam:wght@700&family=Noto+Serif+Devanagari:wght@400;600&family=Playball&family=Playfair+Display:ital@1&family=Tiro+Devanagari+Hindi&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -95,7 +95,7 @@
       <svg class="floral tr" aria-hidden="true"><use href="#spray"/></svg>
       <p class="eyebrow">Welcome, family</p>
       <h2>Wedding invitation studio</h2>
-      <p class="lead">Create a personal invitation video for every guest, ready to send on WhatsApp.</p>
+      <p class="lead">Create a personal invitation video or card for every guest, ready to send on WhatsApp.</p>
       <form id="lock-form" autocomplete="off">
         <label for="password">Family password</label>
         <input id="password" type="password" autocomplete="current-password" required>
@@ -104,11 +104,24 @@
       </form>
     </section>
 
-    <!-- Step 2: details -->
-    <section id="step-form" class="card" hidden>
+    <!-- Step 2: video or card -->
+    <section id="step-kind" class="card" hidden>
       <svg class="floral tl" aria-hidden="true"><use href="#spray"/></svg>
       <svg class="floral tr" aria-hidden="true"><use href="#spray"/></svg>
       <p class="eyebrow center">New invitation</p>
+      <h2 class="center">What would you like to send?</h2>
+      <div id="kind-list" class="tiles" role="radiogroup" aria-label="Invitation type">
+        <label class="tile"><input type="radio" name="kind" value="video" checked><span class="tile-title">Video invite</span></label>
+        <label class="tile" id="kind-card-tile"><input type="radio" name="kind" value="card"><span class="tile-title">Card invite</span></label>
+      </div>
+      <button type="button" class="primary" id="kind-next">Continue</button>
+    </section>
+
+    <!-- Step 3: details -->
+    <section id="step-form" class="card" hidden>
+      <svg class="floral tl" aria-hidden="true"><use href="#spray"/></svg>
+      <svg class="floral tr" aria-hidden="true"><use href="#spray"/></svg>
+      <p class="eyebrow center"><span id="form-kind">Video invite</span> · <button type="button" class="link eyebrow-link" id="change-kind">change</button></p>
       <h2 class="center">Who is it for?</h2>
       <form id="invite-form" novalidate>
         <p class="field-label">Invitation from</p>
@@ -126,6 +139,7 @@
           <p class="hint">Translated automatically from the name above. Tap to correct it. <button type="button" class="link" id="guest-hi-redo">Translate again</button></p>
         </div>
 
+        <div id="rsvp-block">
         <label for="rsvp-select" class="field-label">RSVP contact</label>
         <div class="select-wrap"><select id="rsvp-select"></select></div>
         <button type="button" id="remove-contact" class="link" hidden>Remove this saved contact</button>
@@ -138,13 +152,14 @@
           <input id="rsvp-phone" enterkeyhint="done" type="tel" inputmode="tel" maxlength="20" placeholder="e.g. +91 98765 43210">
           <label class="check"><input type="checkbox" id="save-contact" checked> Save this contact for next time</label>
         </div>
+        </div>
 
         <p class="error" id="form-error" hidden></p>
         <button type="button" class="primary" id="generate-btn">Create invitation video</button>
       </form>
     </section>
 
-    <!-- Step 3: progress -->
+    <!-- Step 4: progress -->
     <section id="step-progress" class="card center" hidden>
       <svg class="floral tl" aria-hidden="true"><use href="#spray"/></svg>
       <svg class="floral tr" aria-hidden="true"><use href="#spray"/></svg>
@@ -155,13 +170,14 @@
       <p class="hint">Please keep this screen open. The first time takes a little longer while the studio loads.</p>
     </section>
 
-    <!-- Step 4: result -->
+    <!-- Step 5: result -->
     <section id="step-result" class="card center" hidden>
       <svg class="floral tl" aria-hidden="true"><use href="#spray"/></svg>
       <svg class="floral tr" aria-hidden="true"><use href="#spray"/></svg>
       <p class="eyebrow">Ready to send</p>
       <h2 class="result-title">Invitation for <span id="result-guest"></span></h2>
-      <div class="video-frame"><video id="preview" controls playsinline preload="metadata"></video></div>
+      <div class="video-frame" id="video-frame"><video id="preview" controls playsinline preload="metadata"></video></div>
+      <div class="video-frame card-frame" id="card-frame" hidden><img id="card-preview" alt="Invitation card preview"></div>
       <p id="result-meta" class="hint"></p>
       <div class="actions">
         <a id="download-btn" class="primary button" download>Download video</a>
@@ -173,6 +189,7 @@
       <p id="share-note" class="hint share-note" hidden></p>
       <div class="actions">
         <button id="again-btn" class="secondary">Make another invitation</button>
+        <button id="other-btn" class="secondary">Make a card invite</button>
       </div>
     </section>
 
