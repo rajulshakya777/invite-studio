@@ -60,8 +60,7 @@ $("lock-form").addEventListener("submit", async (e) => {
 
 // ---------- form ----------
 const CHOICES = {
-  rajul: ["Rajul’s family", "Groom’s side"], dolly: ["Dolly’s family", "Bride’s side"],
-  en: ["English", "Video in English"], hi: ["Hindi", "Video in Hindi"],
+  rajul: ["Rajul’s family"], dolly: ["Dolly’s family"], en: ["English"], hi: ["हिंदी"],
 };
 function renderTemplates() {
   const sides = [...new Set(manifest.templates.map((t) => t.side))];
@@ -71,8 +70,8 @@ function renderTemplates() {
     const input = Object.assign(document.createElement("input"), { type: "radio", name, value: v, checked: i === 0 });
     const [title, sub] = CHOICES[v] || [v, ""];
     const t = Object.assign(document.createElement("span"), { className: "tile-title", textContent: title });
-    const st = Object.assign(document.createElement("span"), { className: "tile-sub", textContent: sub });
-    label.append(input, t, st);
+    label.append(input, t);
+    if (sub) label.append(Object.assign(document.createElement("span"), { className: "tile-sub", textContent: sub }));
     return label;
   }));
   group($("side-list"), "side", sides);
@@ -565,25 +564,19 @@ function showResult(bytes, values, seconds, timings) {
   $("result-meta").textContent = `${(bytes.length / 1048576).toFixed(1)} MB · ready in ${seconds} s`;
   console.log("timings", timings);
   const file = new File([blob], filename, { type: "video/mp4" });
-  // Websites can't hand a video straight to one app: on phones each icon opens the share sheet with the
-  // video attached (pick the app there); elsewhere the video is saved so it can be attached in the app.
+  // Websites can't hand a video straight to WhatsApp: on phones the button opens the share sheet with the
+  // video attached (WhatsApp is picked there); elsewhere the video is saved so it can be attached in WhatsApp.
   const canShareFile = !!(navigator.canShare && navigator.canShare({ files: [file] }));
   $("share-note").hidden = true;
-  document.querySelectorAll(".share").forEach((btn) => {
-    btn.onclick = async () => {
-      const app = btn.dataset.app, note = $("share-note");
-      if (canShareFile) {
-        try { await navigator.share({ files: [file] }); note.hidden = true; }
-        catch (ex) {
-          if (ex?.name === "AbortError") return;
-          dl.click(); note.textContent = `The video is saved. Open ${app} and attach it from your gallery or files.`; note.hidden = false;
-        }
-        return;
-      }
-      dl.click();
-      note.textContent = `The video is saved to your downloads. Open ${app} and attach it from there.`;
-      note.hidden = false;
-    };
-  });
+  $("share-btn").onclick = async () => {
+    const note = $("share-note");
+    if (canShareFile) {
+      try { await navigator.share({ files: [file] }); note.hidden = true; return; }
+      catch (ex) { if (ex?.name === "AbortError") return; }
+    }
+    dl.click();
+    note.textContent = "The video is saved. Open WhatsApp and attach it from your gallery or downloads.";
+    note.hidden = false;
+  };
   show("step-result");
 }
