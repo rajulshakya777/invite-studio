@@ -281,6 +281,8 @@ const pngBytes = (canvas) => new Promise((resolve, reject) => canvas.toBlob(
   (b) => b ? b.arrayBuffer().then((a) => resolve(new Uint8Array(a))) : reject(new Error("Could not render the text.")), "image/png"));
 
 // Overlays a text PNG on a background clip and encodes it with the template-matched x264 settings.
+// Each background starts and ends on a 0.8 s crossfade, so the text's 0.8 s alpha ramps exactly follow the
+// page fading in/out: the text is printed on the page, never animated on its own.
 function slideArgs(bg, png, out, seconds, { textIn, textOut, frameOut }) {
   const frames = Math.round(seconds * FPS);
   let text = `[1:v]format=yuva420p,loop=loop=-1:size=1,setpts=N/${FPS}/TB,fade=t=in:st=${textIn}:d=0.8:alpha=1`;
@@ -331,9 +333,9 @@ async function generate(values) {
     mark("text", t0);
 
     t0 = performance.now();
-    await run(slideArgs("guestBg.mp4", "guest.png", "guest.mp4", t.guestSeconds, { textIn: 0.2, textOut: t.guestSeconds - 0.8 }),
+    await run(slideArgs("guestBg.mp4", "guest.png", "guest.mp4", t.guestSeconds, { textIn: 0, textOut: t.guestSeconds - 0.8 }),
       "Adding the guest name", t.guestSeconds, 0.48, 0.72);
-    await run(slideArgs("rsvpBg.mp4", "rsvp.png", "rsvp.mp4", t.rsvpSeconds, { textIn: 0.1, frameOut: t.rsvpSeconds - 0.8 }),
+    await run(slideArgs("rsvpBg.mp4", "rsvp.png", "rsvp.mp4", t.rsvpSeconds, { textIn: 0, frameOut: t.rsvpSeconds - 0.8 }),
       "Adding the RSVP details", t.rsvpSeconds, 0.72, 0.94);
     mark("encode", t0);
 
