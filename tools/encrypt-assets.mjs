@@ -47,11 +47,5 @@ for (const t of config.templates) {
   }
   manifest.templates.push(entry);
 }
-if (config.hero) {
-  const { iv, ct } = await encrypt(await readFile(path.resolve(configDir, config.hero)));
-  await writeFile(path.join(OUT, "hero.bin"), ct);
-  manifest.hero = { path: "assets/hero.bin", iv, size: ct.length };
-  console.log(`encrypted hero -> hero.bin (${ct.length} bytes)`);
-}
 await writeFile(path.join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2));
 console.log("wrote manifest.json");

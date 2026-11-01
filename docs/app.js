@@ -4,18 +4,19 @@ import { FFmpeg } from "./vendor/ffmpeg/index.js";
 const W = 720, H = 1280, FPS = 30;
 // Header-relevant x264 settings copied from the template encode so the slide SPS/PPS are
 // byte-identical to the main video and it can be concatenated without re-encoding.
-// Only me/subme/trellis/lookahead are lowered for speed (they don't change the headers);
-// crf must equal the template's because x264 writes it into the PPS (pic_init_qp).
+// Only analysis options are lowered for speed (me/subme/trellis/lookahead/partitions/mbtree/aq/psy do not
+// change the headers); crf must equal the template's because x264 writes it into the PPS (pic_init_qp).
 const X264_LEVEL = "3.1";
 const X264_PARAMS = "cabac=1:ref=2:deblock=0,0:8x8dct=1:cqm=flat:chroma-qp-offset=-2:bframes=3:" +
   "b-pyramid=normal:weightb=1:weightp=1:keyint=250:keyint-min=25:open-gop=0:" +
-  "me=dia:subme=1:trellis=0:rc-lookahead=10:crf=24";
+  "me=dia:subme=0:trellis=0:rc-lookahead=0:mbtree=0:partitions=none:mixed-refs=0:b-adapt=0:scenecut=0:" +
+  "aq-mode=0:psy=0:crf=24";
 
 const $ = (id) => document.getElementById(id);
 const steps = ["step-lock", "step-form", "step-progress", "step-result", "step-error"];
 function show(step) { for (const s of steps) $(s).hidden = s !== step; window.scrollTo(0, 0); }
 
-let manifest, key, ffmpeg, loadedVideoId = null, logTail = [], resultUrl = null;
+let manifest, key, logTail = [], resultUrl = null;
 const assetCache = new Map();
 
 // ---------- password / decryption ----------
@@ -47,9 +48,9 @@ $("lock-form").addEventListener("submit", async (e) => {
     catch { key = null; throw new Error("Wrong password. Please try again."); }
     renderTemplates();
     renderContacts();
-    showHero();
+    updateLangUI();
     show("step-form");
-    warmUp(); // start downloading the engine while the form is filled in
+    warmUp(); // start the engines and fetch the chosen video while the form is filled in
   } catch (ex) {
     err.textContent = ex.message; err.hidden = false;
   } finally {
@@ -57,19 +58,10 @@ $("lock-form").addEventListener("submit", async (e) => {
   }
 });
 
-async function showHero() {
-  if (!manifest.hero) return;
-  try {
-    const img = await decrypt(manifest.hero.iv, await fetchBytes(manifest.hero.path, manifest.hero.size));
-    $("hero-img").src = URL.createObjectURL(new Blob([img], { type: "image/jpeg" }));
-    $("hero").hidden = false;
-  } catch { /* the photo is decoration only */ }
-}
-
 // ---------- form ----------
 const CHOICES = {
-  rajul: ["Rajul’s family", "राजुल पक्ष"], dolly: ["Dolly’s family", "डौली पक्ष"],
-  en: ["English", "Dear …"], hi: ["हिन्दी", "प्रिय …"],
+  rajul: ["Rajul’s family", "Groom’s side"], dolly: ["Dolly’s family", "Bride’s side"],
+  en: ["English", "Video in English"], hi: ["Hindi", "Video in Hindi"],
 };
 function renderTemplates() {
   const sides = [...new Set(manifest.templates.map((t) => t.side))];
@@ -85,11 +77,79 @@ function renderTemplates() {
   }));
   group($("side-list"), "side", sides);
   group($("lang-list"), "lang", langs);
+  document.querySelectorAll('input[name="lang"]').forEach((r) => r.addEventListener("change", updateLangUI));
+  document.querySelectorAll('input[name="side"]').forEach((r) => r.addEventListener("change", () => {
+    // follow the chosen side with its own contact, unless a different contact was picked on purpose
+    DEFAULT_CONTACT = `p-${r.value}`;
+    if (["p-rajul", "p-dolly"].includes($("rsvp-select").value)) renderContacts(DEFAULT_CONTACT);
+  }));
+  document.querySelectorAll('input[name="side"], input[name="lang"]').forEach((r) => r.addEventListener("change", prefetchChosen));
 }
+const currentLang = () => document.querySelector('input[name="lang"]:checked')?.value || "en";
+function updateLangUI() {
+  $("guest-hi-wrap").hidden = currentLang() !== "hi";
+  if (currentLang() === "hi") guestHindi.refresh();
+  renderContacts($("rsvp-select").value || undefined);
+}
+
+// ---------- Hindi names ----------
+// Names are transliterated with Google Input Tools (the same engine as the Google Hindi keyboard);
+// common invitation words are translated from a small dictionary. The result is always editable.
+const HI_WORDS = {
+  family: "परिवार", parivar: "परिवार", parivaar: "परिवार", ji: "जी", jee: "जी", mr: "श्री", shri: "श्री", shree: "श्री", sri: "श्री",
+  mrs: "श्रीमती", smt: "श्रीमती", ms: "सुश्री", miss: "सुश्री", kumari: "कुमारी", dr: "डॉ.", and: "एवं", "&": "एवं",
+  uncle: "अंकल", aunty: "आंटी", auntie: "आंटी", sir: "सर", madam: "मैडम", bhaiya: "भैया", bhai: "भाई", bhabhi: "भाभी",
+  didi: "दीदी", sahab: "साहब", saheb: "साहब", mama: "मामा", mami: "मामी", chacha: "चाचा", chachi: "चाची", tau: "ताऊ", tai: "ताई",
+  nana: "नाना", nani: "नानी", dada: "दादा", dadi: "दादी", bua: "बुआ", fufa: "फूफा", mausi: "मौसी", mausa: "मौसा", jija: "जीजा",
+  friends: "मित्रगण", friend: "मित्र", colleagues: "सहकर्मी", ka: "का", ki: "की", ke: "के",
+};
+const hiCache = new Map();
+function translitWord(w) {
+  if (!hiCache.has(w)) {
+    const url = `https://inputtools.google.com/request?text=${encodeURIComponent(w)}&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8`;
+    const p = fetch(url).then((r) => r.json()).then((d) => (d?.[0] === "SUCCESS" && d[1]?.[0]?.[1]?.[0]) || null).catch(() => null);
+    hiCache.set(w, p);
+    p.then((v) => { if (!v) hiCache.delete(w); });
+  }
+  return hiCache.get(w);
+}
+// Returns the Hindi text, or null when the translation service can't be reached.
+async function toHindi(text) {
+  let s = clean(text || ""), tail = "";
+  if (!s) return "";
+  const fam = /\s*(?:&|and|with)\s+family$/i.exec(s);
+  if (fam && fam.index > 0) { s = s.slice(0, fam.index); tail = " सपरिवार"; }
+  const out = await Promise.all(s.split(" ").map(async (w) => {
+    if (/[\u0900-\u097F]/.test(w) || !/[a-z]/i.test(w)) return w;          // already Hindi, or digits/symbols
+    const k = w.toLowerCase().replace(/[.,]+$/, "");
+    return HI_WORDS[k] ?? await translitWord(k);
+  }));
+  return out.includes(null) ? null : out.join(" ") + tail;
+}
+const debounce = (fn, ms) => { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; };
+// Keeps a Hindi field in step with an English one until the person edits the Hindi themselves.
+function hindiFollower(src, dst) {
+  let edited = false, seq = 0;
+  const refresh = async () => {
+    if (edited) return;
+    const my = ++seq, v = await toHindi(src.value);
+    if (my !== seq || edited) return;
+    if (v === null) { dst.placeholder = "Type the name in Hindi"; return; }
+    dst.value = v;
+  };
+  const later = debounce(refresh, 350);
+  dst.addEventListener("input", () => { edited = dst.value.trim() !== ""; });
+  src.addEventListener("input", () => { if (!src.value.trim()) { edited = false; dst.value = ""; } later(); });
+  return { refresh, redo() { edited = false; dst.value = ""; return refresh(); }, reset() { edited = false; dst.value = ""; } };
+}
+const guestHindi = hindiFollower($("guest"), $("guest-hi"));
+const contactHindi = hindiFollower($("rsvp-name"), $("rsvp-name-hi"));
+$("guest-hi-redo").addEventListener("click", () => guestHindi.redo());
 
 // RSVP contacts: the family contacts are built in; extra ones are saved on this device.
 const PRESETS = [
   { id: "p-rajul", name: "Rajul", hi: "राजुल", phone: "+91 82907 34790" },
+  { id: "p-dolly", name: "Dolly", hi: "डौली", phone: "+91 84330 66638" },
   { id: "p-swati", name: "Swati", hi: "स्वाति", phone: "+91 73021 57156" },
   { id: "p-sushil", name: "Sushil", hi: "सुशील", phone: "+91 96301 09100" },
 ];
@@ -97,20 +157,23 @@ const CONTACTS_KEY = "invite-studio:rsvp-contacts";
 function loadContacts() {
   try { return (JSON.parse(localStorage.getItem(CONTACTS_KEY)) || []).filter((c) => c?.name && c?.phone); } catch { return []; }
 }
+function contactLabel(c) {
+  return currentLang() === "hi" && c.hi ? `${c.name} (${c.hi}) · ${c.phone}` : `${c.name} · ${c.phone}`;
+}
 function storeContacts(list) {
   try { localStorage.setItem(CONTACTS_KEY, JSON.stringify(list)); } catch { /* private mode: skip saving */ }
 }
 const currentSide = () => document.querySelector('input[name="side"]:checked')?.value || "rajul";
-const DEFAULT_CONTACT = "p-rajul";
+let DEFAULT_CONTACT = "p-rajul";
 function renderContacts(selectId) {
   const sel = $("rsvp-select"), saved = loadContacts();
   const opt = (value, text) => Object.assign(document.createElement("option"), { value, textContent: text });
   const fam = Object.assign(document.createElement("optgroup"), { label: "Family contacts" });
-  fam.append(...PRESETS.map((p) => opt(p.id, `${p.name} · ${p.phone}`)));
+  fam.append(...PRESETS.map((p) => opt(p.id, contactLabel(p))));
   const groups = [fam];
   if (saved.length) {
     const mine = Object.assign(document.createElement("optgroup"), { label: "Saved on this phone" });
-    mine.append(...saved.map((c, i) => opt(`s-${i}`, `${c.name} · ${c.phone}`)));
+    mine.append(...saved.map((c, i) => opt(`s-${i}`, contactLabel(c))));
     groups.push(mine);
   }
   sel.replaceChildren(...groups, opt("__new", "＋ Add another contact"));
@@ -133,18 +196,25 @@ $("remove-contact").addEventListener("click", () => {
 });
 
 const clean = (s) => s.trim().replace(/\s+/g, " ");
-function readForm() {
-  const side = currentSide();
-  const lang = document.querySelector('input[name="lang"]:checked')?.value;
+async function readForm() {
+  const side = currentSide(), lang = currentLang();
   const pick = $("rsvp-select").value;
-  let rsvpName, rsvpPhone;
-  if (pick === "__new") { rsvpName = clean($("rsvp-name").value); rsvpPhone = clean($("rsvp-phone").value); }
-  else if (pick.startsWith("p-")) { const p = PRESETS.find((x) => x.id === pick); rsvpName = lang === "hi" ? p.hi : p.name; rsvpPhone = p.phone; }
-  else { const c = loadContacts()[Number(pick.slice(2))]; rsvpName = c?.name; rsvpPhone = c?.phone; }
-  const v = { templateId: manifest.templates.find((t) => t.side === side && t.lang === lang)?.id, guest: clean($("guest").value), rsvpName, rsvpPhone };
-  if (!v.templateId) return [null, "Please choose the family and the language."];
-  if (!v.guest) return [null, "Please enter the guest name."];
-  if (!v.rsvpName) return [null, "Please enter the RSVP contact name."];
+  let contact;
+  if (pick === "__new") contact = { name: clean($("rsvp-name").value), hi: clean($("rsvp-name-hi").value), phone: clean($("rsvp-phone").value) };
+  else if (pick.startsWith("p-")) contact = PRESETS.find((x) => x.id === pick);
+  else contact = loadContacts()[Number(pick.slice(2))] || {};
+  let guest = clean($("guest").value);
+  const templateId = manifest.templates.find((t) => t.side === side && t.lang === lang)?.id;
+  if (!templateId) return [null, "Please choose the family and the language."];
+  if (!guest && !(lang === "hi" && clean($("guest-hi").value))) return [null, "Please enter the guest name."];
+  if (!contact.name) return [null, "Please enter the RSVP contact name."];
+  if (lang === "hi") {
+    guest = clean($("guest-hi").value) || await toHindi(guest);
+    if (!guest) return [null, "Please type the guest name in Hindi."];
+    $("guest-hi").value = guest;
+    if (!contact.hi) contact = { ...contact, hi: (await toHindi(contact.name)) || "" };
+  }
+  const v = { templateId, guest, rsvpName: lang === "hi" ? contact.hi || contact.name : contact.name, rsvpPhone: contact.phone, contact };
   const digits = (v.rsvpPhone || "").replace(/\D/g, "");
   if (!/^[+\d][\d\s()-]*$/.test(v.rsvpPhone || "") || digits.length < 7 || digits.length > 15)
     return [null, "Please enter a valid phone number (7–15 digits, may start with +)."];
@@ -153,19 +223,20 @@ function readForm() {
 
 $("invite-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const [values, problem] = readForm();
+  const [values, problem] = await readForm();
   $("form-error").hidden = !problem;
   if (problem) { $("form-error").textContent = problem; return; }
   if ($("rsvp-select").value === "__new" && $("save-contact").checked) {
     const others = loadContacts().filter((c) => c.phone !== values.rsvpPhone);
-    storeContacts([{ name: values.rsvpName, phone: values.rsvpPhone }, ...others].slice(0, 12));
-    $("rsvp-name").value = ""; $("rsvp-phone").value = "";
+    const { name, hi, phone } = values.contact;
+    storeContacts([{ name, hi, phone }, ...others].slice(0, 12));
+    $("rsvp-name").value = ""; $("rsvp-phone").value = ""; contactHindi.reset();
     renderContacts("s-0");
   }
   await generate(values);
 });
 
-$("again-btn").addEventListener("click", () => { $("guest").value = ""; renderContacts(); show("step-form"); $("guest").focus(); });
+$("again-btn").addEventListener("click", () => { $("guest").value = ""; guestHindi.reset(); renderContacts(); show("step-form"); $("guest").focus(); });
 $("retry-btn").addEventListener("click", () => show(key ? "step-form" : "step-lock"));
 
 // ---------- progress ----------
@@ -192,53 +263,83 @@ async function fetchBytes(url, expectedSize, onProgress) {
   return out;
 }
 
-// ---------- ffmpeg engine ----------
-let enginePromise = null;
-function warmUp() { getEngine(() => {}).catch(() => { enginePromise = null; }); }
-
-function getEngine(onProgress) {
-  if (enginePromise) { enginePromise.then(() => onProgress(1)); return enginePromise; }
-  enginePromise = (async () => {
-    const base = new URL("vendor/core/", location.href);
-    const wasm = await fetchBytes(new URL("ffmpeg-core.wasm", base), 32232419, onProgress);
-    const wasmURL = URL.createObjectURL(new Blob([wasm], { type: "application/wasm" }));
+// ---------- ffmpeg engines ----------
+// Two independent ffmpeg.wasm instances (each runs in its own worker, i.e. its own CPU core) so the guest
+// page and the RSVP page are encoded at the same time. If the second one can't start, everything runs on one.
+let wasmUrlPromise = null;
+const engines = [null, null];
+function getWasmUrl(onProgress) {
+  wasmUrlPromise ??= fetchBytes(new URL("vendor/core/ffmpeg-core.wasm", location.href), 32232419, onProgress)
+    .then((w) => URL.createObjectURL(new Blob([w], { type: "application/wasm" })));
+  wasmUrlPromise.catch(() => { wasmUrlPromise = null; });
+  return wasmUrlPromise;
+}
+function getEngine(i, onProgress = () => {}) {
+  if (engines[i]) { engines[i].then(() => onProgress(1)).catch(() => {}); return engines[i]; }
+  engines[i] = (async () => {
+    const wasmURL = await getWasmUrl(onProgress);
     const ff = new FFmpeg();
     ff.on("log", ({ message }) => { logTail.push(message); if (logTail.length > 60) logTail.shift(); });
-    await ff.load({ coreURL: new URL("ffmpeg-core.js", base).href, wasmURL });
-    ffmpeg = ff;
+    await ff.load({ coreURL: new URL("vendor/core/ffmpeg-core.js", location.href).href, wasmURL });
+    ff.loaded = new Set(); // names of the template files already written into this engine
     return ff;
   })();
-  enginePromise.catch(() => { enginePromise = null; });
-  return enginePromise;
+  engines[i].catch(() => { engines[i] = null; });
+  return engines[i];
+}
+function chosenTemplate() {
+  return manifest?.templates.find((t) => t.side === currentSide() && t.lang === currentLang());
+}
+function warmUp() {
+  getEngine(0).then(() => getEngine(1)).catch(() => {});
+  prefetchChosen();
+}
+function prefetchChosen() {
+  const t = chosenTemplate();
+  if (t) for (const k of ["guestBg", "rsvpBg", "partA", "partB", "music"]) getAsset(t, k).catch(() => {});
 }
 
 async function getAsset(template, kind, onProgress) {
   const cacheKey = `${template.id}:${kind}`;
-  if (assetCache.has(cacheKey)) { onProgress?.(1); return assetCache.get(cacheKey); }
-  const f = template.files[kind];
-  const bytes = await decrypt(f.iv, await fetchBytes(f.path, f.size, onProgress));
-  assetCache.set(cacheKey, bytes);
+  if (!assetCache.has(cacheKey)) {
+    const f = template.files[kind];
+    const p = (async () => decrypt(f.iv, await fetchBytes(f.path, f.size, (x) => p.onProgress?.(x))))();
+    assetCache.set(cacheKey, p);
+    p.catch(() => assetCache.delete(cacheKey));
+  }
+  const p = assetCache.get(cacheKey);
+  p.onProgress = onProgress;
+  const bytes = await p;
+  onProgress?.(1);
   return bytes;
 }
+async function putFiles(ff, t, files) {
+  for (const [kind, name] of files) {
+    const tag = `${t.id}:${kind}`;
+    if (ff.loaded.has(tag)) continue;
+    for (const old of [...ff.loaded].filter((x) => x.endsWith(`:${kind}`))) ff.loaded.delete(old);
+    await ff.writeFile(name, await getAsset(t, kind));
+    ff.loaded.add(tag);
+  }
+}
 
-async function run(args, label, durationSeconds, from, to) {
+async function run(ff, args, label, durationSeconds, onFraction) {
   const onLog = ({ message }) => {
     const m = /time=(\d+):(\d+):(\d+\.\d+)/.exec(message);
-    if (m) setProgress(from + (to - from) * Math.min(1, (+m[1] * 3600 + +m[2] * 60 + +m[3]) / durationSeconds));
+    if (m) onFraction(Math.min(1, (+m[1] * 3600 + +m[2] * 60 + +m[3]) / durationSeconds));
   };
-  setProgress(from, label);
-  ffmpeg.on("log", onLog);
+  ff.on("log", onLog);
   try {
-    const code = await ffmpeg.exec(args);
+    const code = await ff.exec(args);
     if (code !== 0) throw new Error(`Video processing failed while “${label.toLowerCase()}” (code ${code}).`);
-  } finally { ffmpeg.off("log", onLog); }
-  setProgress(to);
+  } finally { ff.off("log", onLog); }
+  onFraction(1);
 }
 
 // ---------- slide artwork (approved designs, 720x1280) ----------
 const NAVY = "#0e2260", GOLD = "#a07424", INK = "#2f4a3a";
 const NAME_FONT = '"Playball", "Kalam", cursive';            // guest name (Kalam covers Devanagari)
-const DEAR_FONT = { en: 'italic 400 30px "Playfair Display", Georgia, serif', hi: '400 30px "Noto Serif Devanagari", serif' };
+const DEAR_FONT = { en: 'italic 400 38px "Playfair Display", Georgia, serif', hi: '400 38px "Noto Serif Devanagari", serif' };
 const DEAR_WORD = { en: "Dear", hi: "प्रिय" };
 const RSVP_NAME_FONT = '"Great Vibes", "Kalam", cursive';
 const CLOSING = {
@@ -266,19 +367,19 @@ const nameFont = (s) => `400 ${s}px ${NAME_FONT}`;   // Playball has one weight;
 // "Dear <guest>" in the empty top of the guest-page arch: gold "Dear", bold navy script name, soft shadow.
 function guestLayer(t, guest) {
   const [c, ctx] = layer();
-  const { cx } = t.guest, maxW = 330;
+  const { cx } = t.guest, maxW = 380;
   const width = (s, txt) => { ctx.font = nameFont(s); return ctx.measureText(txt).width; };
-  let size = 66, lines = [guest];
+  let size = 84, lines = [guest];
   while (width(size, guest) > maxW && size > 40) size -= 2;
   const words = guest.split(" ");
-  if ((size < 54 || width(size, guest) > maxW) && words.length > 1) {
+  if ((size < 58 || width(size, guest) > maxW) && words.length > 1) {
     let k = 1, best = Infinity;
     for (let i = 1; i < words.length; i++) {
       const d = Math.abs(words.slice(0, i).join(" ").length - words.slice(i).join(" ").length);
       if (d < best) { best = d; k = i; }
     }
     lines = [words.slice(0, k).join(" "), words.slice(k).join(" ")];
-    size = 60;
+    size = 66;
     while (Math.max(...lines.map((l) => width(size, l))) > maxW && size > 34) size -= 2;
   }
   // Bottom-anchored: the lowest ink sits GAP px above the gold divider over "You are cordially invited…",
@@ -322,20 +423,36 @@ function rsvpLayer(t, rsvpName, rsvpPhone) {
   return c;
 }
 
+// Trims a full-frame text layer to its ink (even offsets/sizes for 4:2:0) and returns where it goes.
+function cropToInk(canvas) {
+  const { data } = canvas.getContext("2d").getImageData(0, 0, W, H);
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) {
+    const row = y * W * 4;
+    for (let x = 0; x < W; x++) if (data[row + x * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; y1 = y; }
+  }
+  if (x1 < 0) return { canvas, x: 0, y: 0 };
+  x0 = Math.max(0, (x0 - 4) & ~1); y0 = Math.max(0, (y0 - 4) & ~1);
+  x1 = Math.min(W, (x1 + 6) & ~1); y1 = Math.min(H, (y1 + 6) & ~1);
+  const c = Object.assign(document.createElement("canvas"), { width: x1 - x0, height: y1 - y0 });
+  c.getContext("2d").drawImage(canvas, -x0, -y0);
+  return { canvas: c, x: x0, y: y0 };
+}
+
 const pngBytes = (canvas) => new Promise((resolve, reject) => canvas.toBlob(
   (b) => b ? b.arrayBuffer().then((a) => resolve(new Uint8Array(a))) : reject(new Error("Could not render the text.")), "image/png"));
 
 // Overlays a text PNG on a background clip and encodes it with the template-matched x264 settings.
 // Each background starts and ends on a 0.8 s crossfade, so the text's 0.8 s alpha ramps exactly follow the
 // page fading in/out: the text is printed on the page, never animated on its own.
-function slideArgs(bg, png, out, seconds, { textIn, textOut, frameOut }) {
+function slideArgs(bg, png, out, seconds, { x, y, textIn, textOut, frameOut }) {
   const frames = Math.round(seconds * FPS);
   let text = `[1:v]format=yuva420p,loop=loop=-1:size=1,setpts=N/${FPS}/TB,fade=t=in:st=${textIn}:d=0.8:alpha=1`;
   if (textOut != null) text += `,fade=t=out:st=${textOut}:d=0.8:alpha=1`;
   const tail = frameOut != null ? `,fade=t=out:st=${frameOut}:d=0.8` : "";
   return [
     "-i", bg, "-i", png,
-    "-filter_complex", `[0:v]setpts=N/${FPS}/TB[b];${text}[t];[b][t]overlay=format=yuv420:eof_action=endall:shortest=1${tail},format=yuv420p,setsar=0[v]`,
+    "-filter_complex", `[0:v]setpts=N/${FPS}/TB[b];${text}[t];[b][t]overlay=x=${x}:y=${y}:format=yuv420:eof_action=endall:shortest=1${tail},format=yuv420p,setsar=0[v]`,
     "-map", "[v]", "-frames:v", String(frames),
     "-c:v", "libx264", "-profile:v", "high", "-level:v", X264_LEVEL, "-x264-params", X264_PARAMS,
     "-video_track_timescale", "15360", "-y", out,
@@ -352,47 +469,52 @@ async function generate(values) {
   setProgress(0, "Loading the video engine");
   try {
     let t0 = performance.now();
-    await getEngine((p) => setProgress(p * 0.25, `Loading the video engine… ${Math.round(p * 100)}%`));
+    const ff = await getEngine(0, (p) => setProgress(p * 0.2, `Loading the video engine… ${Math.round(p * 100)}%`));
+    const ff2 = await getEngine(1).catch(() => null);
     mark("engine", t0);
 
     t0 = performance.now();
-    const kinds = ["partB", "guestBg", "partA", "rsvpBg", "music"];
-    const sizes = kinds.map((k) => t.files[k].size), total = sizes.reduce((a, b) => a + b, 0);
-    let done = 0;
-    const bytes = {};
-    for (const [i, k] of kinds.entries()) {
-      bytes[k] = await getAsset(t, k, (p) => setProgress(0.25 + 0.2 * (done + p * sizes[i]) / total, `Loading the ${t.label} video… ${Math.round(100 * (done + p * sizes[i]) / total)}%`));
-      done += sizes[i];
-    }
-    if (loadedVideoId !== t.id) {
-      for (const k of kinds) await ffmpeg.writeFile(`${k}.${k === "music" ? "m4a" : "mp4"}`, bytes[k]);
-      loadedVideoId = t.id;
-    }
+    const kinds = ["guestBg", "rsvpBg", "partA", "partB", "music"];
+    const sizes = kinds.map((k) => t.files[k].size), total = sizes.reduce((a, b) => a + b, 0), got = {};
+    const tick = () => { const f = kinds.reduce((a, k, i) => a + (got[k] || 0) * sizes[i], 0) / total;
+      setProgress(0.2 + 0.25 * f, `Loading the ${t.label} video… ${Math.round(f * 100)}%`); };
+    await Promise.all(kinds.map((k) => getAsset(t, k, (p) => { got[k] = p; tick(); })));
+    const rsvpEngine = ff2 || ff;
+    await putFiles(ff, t, [["guestBg", "guestBg.mp4"], ["partA", "partA.mp4"], ["partB", "partB.mp4"], ["music", "music.m4a"]]);
+    await putFiles(rsvpEngine, t, [["rsvpBg", "rsvpBg.mp4"]]);
     mark("assets", t0);
 
     t0 = performance.now();
     setProgress(0.46, "Writing the names");
     await ensureFonts();
-    await ffmpeg.writeFile("guest.png", await pngBytes(guestLayer(t, values.guest)));
-    await ffmpeg.writeFile("rsvp.png", await pngBytes(rsvpLayer(t, values.rsvpName, values.rsvpPhone)));
+    const g = cropToInk(guestLayer(t, values.guest)), r = cropToInk(rsvpLayer(t, values.rsvpName, values.rsvpPhone));
+    await ff.writeFile("guest.png", await pngBytes(g.canvas));
+    await rsvpEngine.writeFile("rsvp.png", await pngBytes(r.canvas));
     mark("text", t0);
 
     t0 = performance.now();
-    await run(slideArgs("guestBg.mp4", "guest.png", "guest.mp4", t.guestSeconds, { textIn: 0, textOut: t.guestSeconds - 0.8 }),
-      "Adding the guest name", t.guestSeconds, 0.48, 0.72);
-    await run(slideArgs("rsvpBg.mp4", "rsvp.png", "rsvp.mp4", t.rsvpSeconds, { textIn: 0, frameOut: t.rsvpSeconds - 0.8 }),
-      "Adding the RSVP details", t.rsvpSeconds, 0.72, 0.94);
+    const frac = [0, 0];
+    const both = () => setProgress(0.48 + 0.46 * (frac[0] + frac[1]) / 2);
+    setProgress(0.48, "Adding the guest name and RSVP details");
+    const guestJob = () => run(ff, slideArgs("guestBg.mp4", "guest.png", "guest.mp4", t.guestSeconds,
+      { x: g.x, y: g.y, textIn: 0, textOut: t.guestSeconds - 0.8 }), "Adding the guest name", t.guestSeconds, (f) => { frac[0] = f; both(); });
+    const rsvpJob = () => run(rsvpEngine, slideArgs("rsvpBg.mp4", "rsvp.png", "rsvp.mp4", t.rsvpSeconds,
+      { x: r.x, y: r.y, textIn: 0, frameOut: t.rsvpSeconds - 0.8 }), "Adding the RSVP details", t.rsvpSeconds, (f) => { frac[1] = f; both(); });
+    if (ff2) await Promise.all([guestJob(), rsvpJob()]);
+    else { await guestJob(); await rsvpJob(); }
+    if (ff2) { await ff.writeFile("rsvp.mp4", await ff2.readFile("rsvp.mp4")); await ff2.deleteFile("rsvp.mp4").catch(() => {}); }
     mark("encode", t0);
 
     t0 = performance.now();
-    await ffmpeg.writeFile("list.txt", "file partA.mp4\nfile guest.mp4\nfile partB.mp4\nfile rsvp.mp4\n");
+    await ff.writeFile("list.txt", "file partA.mp4\nfile guest.mp4\nfile partB.mp4\nfile rsvp.mp4\n");
     // Video is stream-copied (template parts never re-encoded); the full-length music is muxed over all of it.
-    await run(["-f", "concat", "-safe", "0", "-i", "list.txt", "-i", "music.m4a", "-map", "0:v", "-map", "1:a",
-      "-c", "copy", "-shortest", "-movflags", "+faststart", "-y", "out.mp4"],
-      "Joining the video and music", t.totalSeconds, 0.94, 0.99);
-    const out = await ffmpeg.readFile("out.mp4");
+    setProgress(0.95, "Joining the video and music");
+    await run(ff, ["-f", "concat", "-safe", "0", "-i", "list.txt", "-i", "music.m4a", "-map", "0:v", "-map", "1:a",
+      "-c", "copy", "-shortest", "-movflags", "+faststart", "-y", "out.mp4"], "Joining the video and music", t.totalSeconds, () => {});
+    const out = await ff.readFile("out.mp4");
     mark("join", t0);
-    for (const f of ["guest.png", "rsvp.png", "guest.mp4", "rsvp.mp4", "out.mp4", "list.txt"]) await ffmpeg.deleteFile(f).catch(() => {});
+    for (const f of ["guest.png", "rsvp.png", "guest.mp4", "rsvp.mp4", "out.mp4", "list.txt"]) await ff.deleteFile(f).catch(() => {});
+    if (ff2) await ff2.deleteFile("rsvp.png").catch(() => {});
     if (!out?.length) throw new Error("The finished video came out empty.");
 
     setProgress(1, "Done");
@@ -418,7 +540,7 @@ function showResult(bytes, values, seconds, timings) {
   if (resultUrl) URL.revokeObjectURL(resultUrl);
   const blob = new Blob([bytes], { type: "video/mp4" });
   resultUrl = URL.createObjectURL(blob);
-  const filename = `Wedding-Invitation-${slug(values.guest)}.mp4`;
+  const filename = `Wedding-Invitation-${slug(clean($("guest").value) || values.guest)}.mp4`;
   $("preview").src = resultUrl;
   const dl = $("download-btn");
   dl.href = resultUrl; dl.download = filename;

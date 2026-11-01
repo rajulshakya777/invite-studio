@@ -1,11 +1,11 @@
 {
   "kdf": {
-    "salt": "+i9YhvFeOgRLKWmfNO6zGA==",
+    "salt": "YDcHucGcwAIFXo97X871qA==",
     "iterations": 250000
   },
   "check": {
-    "iv": "NE2hLwe9XhRgS374",
-    "ct": "RCDOq5CNjkI+cq/hELcqNB8X"
+    "iv": "2bvs4d+1p2gz2RdG",
+    "ct": "Fmm5YmJmBkJkXHuqonIKOmfU"
   },
   "templates": [
     {
@@ -23,28 +23,28 @@
       "files": {
         "partA": {
           "path": "assets/rajul-en-partA.bin",
-          "iv": "AbvlXEzDqYd0pzOL",
+          "iv": "RIzD5JtxOiSXZP96",
           "size": 346761
         },
         "partB": {
           "path": "assets/rajul-en-partB.bin",
-          "iv": "YU460fTRtYsCVvVX",
+          "iv": "wbYkVxoSzWWS5cgG",
           "size": 11388323
         },
         "guestBg": {
           "path": "assets/rajul-en-guestBg.bin",
-          "iv": "UE78ybdfrSebDiOR",
-          "size": 6746260
+          "iv": "1CuGSGTJEn4RT63Z",
+          "size": 7313380
         },
         "rsvpBg": {
           "path": "assets/rajul-en-rsvpBg.bin",
-          "iv": "sUGXlsXVuQlO43Fu",
-          "size": 2199183
+          "iv": "E7L1ZPOz4CUb+zfu",
+          "size": 2687377
         },
         "music": {
           "path": "assets/rajul-en-music.bin",
-          "iv": "gHOfa3ixeA67diZS",
-          "size": 718584
+          "iv": "VS1g3Gv1kjSg73IO",
+          "size": 719140
         }
       }
     },
@@ -63,28 +63,28 @@
       "files": {
         "partA": {
           "path": "assets/rajul-hi-partA.bin",
-          "iv": "6gwC8G4o3M+lxzJZ",
+          "iv": "b2xBNk9+k8bW//ga",
           "size": 345087
         },
         "partB": {
           "path": "assets/rajul-hi-partB.bin",
-          "iv": "Zjt05T9PduB9jA7R",
+          "iv": "H7D1/mQ7vYS4bvuv",
           "size": 9892752
         },
         "guestBg": {
           "path": "assets/rajul-hi-guestBg.bin",
-          "iv": "FhoboY2UZNAEpyet",
-          "size": 6842948
+          "iv": "eVUNLjmVpzAUWlcU",
+          "size": 7002202
         },
         "rsvpBg": {
           "path": "assets/rajul-hi-rsvpBg.bin",
-          "iv": "1t96V7wgpHXoG4gt",
-          "size": 1331651
+          "iv": "foDwHNYpPD2OI5hh",
+          "size": 2282324
         },
         "music": {
           "path": "assets/rajul-hi-music.bin",
-          "iv": "9XXRQfy3FGydNc5t",
-          "size": 718584
+          "iv": "QmB9n/d/bRXIIvJH",
+          "size": 719140
         }
       }
     },
@@ -103,28 +103,28 @@
       "files": {
         "partA": {
           "path": "assets/dolly-en-partA.bin",
-          "iv": "tgJP6NOCBDvLdKMQ",
+          "iv": "qddp0ULScZYWhF2G",
           "size": 346761
         },
         "partB": {
           "path": "assets/dolly-en-partB.bin",
-          "iv": "uz7svG3Ac6leY5Ir",
+          "iv": "+MSBKP/mphuEv8Ot",
           "size": 8275087
         },
         "guestBg": {
           "path": "assets/dolly-en-guestBg.bin",
-          "iv": "NolDriFC4SJPTZIb",
-          "size": 6393025
+          "iv": "GXv16LXxaSh/PDRK",
+          "size": 6396714
         },
         "rsvpBg": {
           "path": "assets/dolly-en-rsvpBg.bin",
-          "iv": "zMvWoR1gnHJRNVJi",
-          "size": 2199183
+          "iv": "9XqfoRv6YDPVGqav",
+          "size": 2687377
         },
         "music": {
           "path": "assets/dolly-en-music.bin",
-          "iv": "zPlCybmUsHkvZlpc",
-          "size": 633954
+          "iv": "x1V4LEfSp8g7Tulr",
+          "size": 634227
         }
       }
     },
@@ -143,35 +143,30 @@
       "files": {
         "partA": {
           "path": "assets/dolly-hi-partA.bin",
-          "iv": "TSY7xDCz7fQTCQ1r",
+          "iv": "VoDHFLsjnoE8CFgM",
           "size": 345087
         },
         "partB": {
           "path": "assets/dolly-hi-partB.bin",
-          "iv": "nqbI3iRCn+iCJqxN",
+          "iv": "mQkbhUUeT2Kvf7rL",
           "size": 8061680
         },
         "guestBg": {
           "path": "assets/dolly-hi-guestBg.bin",
-          "iv": "bE32hcT1OqG1azQh",
-          "size": 6584094
+          "iv": "etotZd3Bb9YGJw8n",
+          "size": 6680786
         },
         "rsvpBg": {
           "path": "assets/dolly-hi-rsvpBg.bin",
-          "iv": "RuKTwPwb+ykKSSOO",
-          "size": 1331651
+          "iv": "4dl5CMthhbI/jvrq",
+          "size": 2282324
         },
         "music": {
           "path": "assets/dolly-hi-music.bin",
-          "iv": "oTuh6luhrRG8L5iC",
-          "size": 633954
+          "iv": "U0F57E960Z31QK5y",
+          "size": 634227
         }
       }
     }
-  ],
-  "hero": {
-    "path": "assets/hero.bin",
-    "iv": "7XaMtdv4TJsO+3Tc",
-    "size": 106141
-  }
+  ]
 }
