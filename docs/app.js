@@ -355,7 +355,6 @@ async function run(ff, args, label, durationSeconds, onFraction) {
 // ---------- slide artwork (approved designs, 720x1280) ----------
 const NAVY = "#0e2260", GOLD = "#a07424", INK = "#2f4a3a";
 const NAME_FONT = '"Playball", "Kalam", cursive';            // guest name (Kalam covers Devanagari)
-const DEAR_FONT = { en: 'italic 400 38px "Playfair Display", Georgia, serif', hi: '400 38px "Noto Serif Devanagari", serif' };
 const DEAR_WORD = { en: "Dear", hi: "प्रिय" };
 const RSVP_NAME_FONT = '"Great Vibes", "Kalam", cursive';
 const CLOSING = {
@@ -381,38 +380,44 @@ function layer() {
 const nameFont = (s) => `400 ${s}px ${NAME_FONT}`;   // Playball has one weight; Kalam falls back to its 700 face
 
 // "Dear <guest>" in the empty top of the guest-page arch: gold "Dear", bold navy script name, soft shadow.
+// Each template gives the free box (top = under the arch ornament, bottom = the first gold divider); the
+// largest size that fits is used, on one line if possible, otherwise on two balanced lines.
 function guestLayer(t, guest) {
   const [c, ctx] = layer();
-  const { cx } = t.guest, maxW = 380;
-  const width = (s, txt) => { ctx.font = nameFont(s); return ctx.measureText(txt).width; };
-  let size = 84, lines = [guest];
-  while (width(size, guest) > maxW && size > 40) size -= 2;
+  const { cx, top, bottom } = t.guest, maxW = t.guest.maxW || 380, GAP = 8;
+  const dearFont = (px) => (t.lang === "hi" ? `400 ${px}px "Noto Serif Devanagari", serif` : `italic 400 ${px}px "Playfair Display", Georgia, serif`);
   const words = guest.split(" ");
-  if ((size < 58 || width(size, guest) > maxW) && words.length > 1) {
+  let two = null;
+  if (words.length > 1) {
     let k = 1, best = Infinity;
     for (let i = 1; i < words.length; i++) {
       const d = Math.abs(words.slice(0, i).join(" ").length - words.slice(i).join(" ").length);
       if (d < best) { best = d; k = i; }
     }
-    lines = [words.slice(0, k).join(" "), words.slice(k).join(" ")];
-    size = 66;
-    while (Math.max(...lines.map((l) => width(size, l))) > maxW && size > 34) size -= 2;
+    two = [words.slice(0, k).join(" "), words.slice(k).join(" ")];
   }
-  // Bottom-anchored: the lowest ink sits GAP px above the gold divider over "You are cordially invited…",
-  // and "Dear" sits the same GAP above the name, matching the line spacing of the printed page.
-  const GAP = 9, lh = Math.round(size * 1.05);
-  ctx.font = nameFont(size);
-  const m = lines.map((l) => ctx.measureText(l));
-  const lastBase = t.guest.bottom - GAP - m[m.length - 1].actualBoundingBoxDescent;
-  const firstBase = lastBase - lh * (lines.length - 1);
-  ctx.font = DEAR_FONT[t.lang];
-  const dm = ctx.measureText(DEAR_WORD[t.lang]);
-  const dearBase = firstBase - m[0].actualBoundingBoxAscent - GAP - dm.actualBoundingBoxDescent;
-  ctx.fillStyle = GOLD;
-  ctx.fillText(DEAR_WORD[t.lang], cx, dearBase);
-  ctx.font = nameFont(size); ctx.fillStyle = NAVY;
+  const fit = (size, lines) => {
+    const dearPx = Math.max(20, Math.min(38, Math.round(size * 0.46)));
+    ctx.font = nameFont(size);
+    const m = lines.map((l) => ctx.measureText(l));
+    if (Math.max(...m.map((x) => x.width)) > maxW) return null;
+    const lh = Math.round(size * 1.05);
+    ctx.font = dearFont(dearPx);
+    const dm = ctx.measureText(DEAR_WORD[t.lang]);
+    const lastBase = bottom - GAP - m[m.length - 1].actualBoundingBoxDescent;
+    const firstBase = lastBase - lh * (lines.length - 1);
+    const dearBase = firstBase - m[0].actualBoundingBoxAscent - GAP - dm.actualBoundingBoxDescent;
+    if (dearBase - dm.actualBoundingBoxAscent < top) return null;
+    return { size, lines, dearPx, firstBase, dearBase, lh };
+  };
+  let L = null;
+  for (let size = 84; size >= 24 && !L; size -= 2) L = fit(size, [guest]) || (two && fit(size, two));
+  L ??= fit(24, two || [guest]) || { size: 24, lines: [guest], dearPx: 20, firstBase: bottom - GAP - 6, dearBase: bottom - GAP - 34, lh: 25 };
+  ctx.font = dearFont(L.dearPx); ctx.fillStyle = GOLD;
+  ctx.fillText(DEAR_WORD[t.lang], cx, L.dearBase);
+  ctx.font = nameFont(L.size); ctx.fillStyle = NAVY;
   ctx.shadowColor = "rgba(14,34,96,0.28)"; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.shadowBlur = 3;
-  lines.forEach((l, i) => ctx.fillText(l, cx, firstBase + i * lh));
+  L.lines.forEach((l, i) => ctx.fillText(l, cx, L.firstBase + i * L.lh));
   return c;
 }
 
