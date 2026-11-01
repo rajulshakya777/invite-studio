@@ -1,13 +1,15 @@
 // Encrypts the private template assets so they can sit on public static hosting.
 // Usage: SITE_PASSWORD=... node tools/encrypt-assets.mjs <assets.json>
-// assets.json: { "templates": [{ "id", "label", "video", "background", "music" }] }
-// video: silent, pre-encoded with the x264 header settings in docs/app.js; music: AAC covering the full output length.
+// assets.json: { "templates": [{ "id", "label", "side", "lang", "guest": {cx, cy}, "meta": "<meta.json>",
+//                                "files": { "partA", "partB", "guestBg", "rsvpBg", "music" } }] }
+// partA/partB: silent, pre-encoded with the x264 header settings in docs/app.js (crf must match);
+// guestBg/rsvpBg: high-quality backgrounds the site overlays the names on; music: AAC covering the full output length.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { webcrypto as crypto } from "node:crypto";
 import path from "node:path";
 
 const ITERATIONS = 250_000;
-const OUT = new URL("../docs/assets/", import.meta.url).pathname;
+const OUT = process.env.OUT_DIR || new URL("../docs/assets/", import.meta.url).pathname;
 
 const password = process.env.SITE_PASSWORD;
 if (!password) throw new Error("Set SITE_PASSWORD");
@@ -32,9 +34,11 @@ const check = await encrypt(new TextEncoder().encode("ok"));
 const manifest = { kdf: { salt: b64(salt), iterations: ITERATIONS }, check: { iv: check.iv, ct: b64(check.ct) }, templates: [] };
 
 for (const t of config.templates) {
-  const entry = { id: t.id, label: t.label, files: {} };
-  for (const kind of ["video", "background", "music"]) {
-    const src = path.resolve(configDir, t[kind]);
+  const meta = JSON.parse(await readFile(path.resolve(configDir, t.meta), "utf8"));
+  const entry = { id: t.id, label: t.label, side: t.side, lang: t.lang, guest: t.guest,
+    totalSeconds: meta.totalSeconds, guestSeconds: meta.guestSeconds, rsvpSeconds: meta.rsvpSeconds, files: {} };
+  for (const [kind, file] of Object.entries(t.files)) {
+    const src = path.resolve(configDir, file);
     const { iv, ct } = await encrypt(await readFile(src));
     const name = `${t.id}-${kind}.bin`;
     await writeFile(path.join(OUT, name), ct);

@@ -1,8 +1,7 @@
 import { FFmpeg } from "./vendor/ffmpeg/index.js";
 
-// Output is 720x1280 for phones/WhatsApp. Slide artwork is laid out on a 1080x1920 grid and scaled.
-const W = 1080, H = 1920, OUT_W = 720, OUT_H = 1280, FPS = 30;
-const INTRO_SECONDS = 3, OUTRO_SECONDS = 3.5;
+// Output is 720x1280 for phones/WhatsApp. All slide artwork is drawn directly on a 720x1280 canvas.
+const W = 720, H = 1280, FPS = 30;
 // Header-relevant x264 settings copied from the template encode so the slide SPS/PPS are
 // byte-identical to the main video and it can be concatenated without re-encoding.
 // Only me/subme/trellis/lookahead are lowered for speed (they don't change the headers);
@@ -10,7 +9,7 @@ const INTRO_SECONDS = 3, OUTRO_SECONDS = 3.5;
 const X264_LEVEL = "3.1";
 const X264_PARAMS = "cabac=1:ref=2:deblock=0,0:8x8dct=1:cqm=flat:chroma-qp-offset=-2:bframes=3:" +
   "b-pyramid=normal:weightb=1:weightp=1:keyint=250:keyint-min=25:open-gop=0:" +
-  "me=dia:subme=1:trellis=0:rc-lookahead=10:crf=23";
+  "me=dia:subme=1:trellis=0:rc-lookahead=10:crf=28";
 
 const $ = (id) => document.getElementById(id);
 const steps = ["step-lock", "step-form", "step-progress", "step-result", "step-error"];
@@ -59,13 +58,17 @@ $("lock-form").addEventListener("submit", async (e) => {
 
 // ---------- form ----------
 function renderTemplates() {
-  const list = $("template-list");
-  list.replaceChildren(...manifest.templates.map((t, i) => {
+  const sides = [...new Set(manifest.templates.map((t) => t.side))];
+  const langs = [...new Set(manifest.templates.map((t) => t.lang))];
+  const LABEL = { rajul: "Rajul", dolly: "Dolly", en: "English", hi: "हिन्दी (Hindi)" };
+  const group = (box, name, values) => box.replaceChildren(...values.map((v, i) => {
     const label = document.createElement("label");
-    const input = Object.assign(document.createElement("input"), { type: "radio", name: "template", value: t.id, checked: i === 0 });
-    label.append(input, document.createTextNode(t.label));
+    const input = Object.assign(document.createElement("input"), { type: "radio", name, value: v, checked: i === 0 });
+    label.append(input, document.createTextNode(LABEL[v] || v));
     return label;
   }));
+  group($("side-list"), "side", sides);
+  group($("lang-list"), "lang", langs);
 }
 
 const CONTACTS_KEY = "invite-studio:rsvp-contacts";
@@ -92,19 +95,17 @@ function renderContacts() {
   if (!contacts.length) box.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "No saved contacts yet." }));
 }
 
-const updateCount = () => { $("message-count").textContent = $("message").value.length; };
-$("message").addEventListener("input", updateCount); updateCount();
-
 function readForm() {
+  const side = document.querySelector('input[name="side"]:checked')?.value;
+  const lang = document.querySelector('input[name="lang"]:checked')?.value;
   const v = {
-    templateId: document.querySelector('input[name="template"]:checked')?.value,
+    templateId: manifest.templates.find((t) => t.side === side && t.lang === lang)?.id,
     guest: $("guest").value.trim().replace(/\s+/g, " "),
-    message: $("message").value.trim().replace(/\s+/g, " "),
     rsvpName: $("rsvp-name").value.trim().replace(/\s+/g, " "),
     rsvpPhone: $("rsvp-phone").value.trim().replace(/\s+/g, " "),
   };
+  if (!v.templateId) return [null, "Please choose Rajul/Dolly and the language."];
   if (!v.guest) return [null, "Please enter the guest name."];
-  if (!v.message) return [null, "Please enter an invitation message."];
   if (!v.rsvpName) return [null, "Please enter the RSVP contact name."];
   const digits = v.rsvpPhone.replace(/\D/g, "");
   if (!/^[+\d][\d\s()-]*$/.test(v.rsvpPhone) || digits.length < 7 || digits.length > 15)
@@ -194,127 +195,109 @@ async function run(args, label, durationSeconds, from, to) {
   setProgress(to);
 }
 
-// ---------- slide artwork ----------
-const SERIF = '"Cormorant Garamond", "Noto Serif Devanagari", Georgia, serif';
-const SCRIPT = '"Great Vibes", "Noto Serif Devanagari", cursive';
-const INK = "#2f4a3a", GOLD = "#a67c2e";
+// ---------- slide artwork (approved designs, 720x1280) ----------
+const NAVY = "#0e2260", GOLD = "#a07424", INK = "#2f4a3a";
+const NAME_FONT = '"Playball", "Kalam", cursive';            // guest name (Kalam covers Devanagari)
+const DEAR_FONT = { en: 'italic 400 30px "Playfair Display", Georgia, serif', hi: '400 30px "Noto Serif Devanagari", serif' };
+const DEAR_WORD = { en: "Dear", hi: "प्रिय" };
+const RSVP_NAME_FONT = '"Great Vibes", "Kalam", cursive';
+const CLOSING = {
+  en: ['italic 400 28px "Cormorant Garamond", Georgia, serif', "We look forward to celebrating with you"],
+  hi: ['400 26px "Noto Serif Devanagari", serif', "आपकी प्रतीक्षा रहेगी"],
+};
 
 async function ensureFonts() {
-  const sample = "Aa नमस्ते";
+  const sample = "Aa Sharma नमस्ते प्रिय";
   await Promise.all([
-    `400 40px "Great Vibes"`, `400 40px "Cormorant Garamond"`, `italic 400 40px "Cormorant Garamond"`,
-    `600 40px "Cormorant Garamond"`, `400 40px "Noto Serif Devanagari"`, `600 40px "Noto Serif Devanagari"`,
+    '400 40px "Playball"', 'italic 400 40px "Playfair Display"', '700 40px "Kalam"', '400 40px "Great Vibes"',
+    '600 40px "Cormorant Garamond"', 'italic 400 40px "Cormorant Garamond"', '400 40px "Noto Serif Devanagari"',
   ].map((f) => document.fonts.load(f, sample).catch(() => {})));
+  await document.fonts.ready;
 }
 
-function wrap(ctx, text, maxWidth) {
-  const words = text.split(" "), lines = [];
-  let line = "";
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; } else line = test;
-  }
-  if (line) lines.push(line);
-  return lines;
-}
-
-// Draws text centred at y, shrinking the font until it fits within maxLines lines.
-function fitText(ctx, text, { y, font, size, minSize, maxWidth, maxLines, lineHeight, color }) {
-  let lines;
-  for (; size >= minSize; size -= 2) {
-    ctx.font = font(size);
-    lines = wrap(ctx, text, maxWidth);
-    if (lines.length <= maxLines && lines.every((l) => ctx.measureText(l).width <= maxWidth)) break;
-  }
-  ctx.fillStyle = color;
-  const lh = size * lineHeight;
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * lh));
-  return y + (lines.length - 1) * lh;
-}
-
-function spaced(ctx, px) { if ("letterSpacing" in ctx) ctx.letterSpacing = `${px}px`; }
-
-function divider(ctx, y) {
-  ctx.strokeStyle = GOLD; ctx.fillStyle = GOLD; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(W / 2 - 150, y); ctx.lineTo(W / 2 - 18, y); ctx.moveTo(W / 2 + 18, y); ctx.lineTo(W / 2 + 150, y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(W / 2, y - 9); ctx.lineTo(W / 2 + 9, y); ctx.lineTo(W / 2, y + 9); ctx.lineTo(W / 2 - 9, y); ctx.closePath(); ctx.fill();
-}
-
-function outputCanvas() {
-  const c = Object.assign(document.createElement("canvas"), { width: OUT_W, height: OUT_H });
+function layer() {
+  const c = Object.assign(document.createElement("canvas"), { width: W, height: H });
   const ctx = c.getContext("2d");
-  ctx.scale(OUT_W / W, OUT_H / H);
+  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
   return [c, ctx];
 }
+const nameFont = (s) => `400 ${s}px ${NAME_FONT}`;   // Playball has one weight; Kalam falls back to its 700 face
 
-function textLayer(draw) {
-  const [c, ctx] = outputCanvas();
-  // soft cream glow behind the text keeps it readable over the floral artwork
-  const g = ctx.createRadialGradient(W / 2, 640, 60, W / 2, 640, 560);
-  g.addColorStop(0, "rgba(251,246,236,0.92)"); g.addColorStop(0.7, "rgba(251,246,236,0.75)"); g.addColorStop(1, "rgba(251,246,236,0)");
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-  draw(ctx);
+// "Dear <guest>" in the empty top of the guest-page arch: gold "Dear", bold navy script name, soft shadow.
+function guestLayer(t, guest) {
+  const [c, ctx] = layer();
+  const { cx, cy } = t.guest, maxW = 330;
+  const width = (s, txt) => { ctx.font = nameFont(s); return ctx.measureText(txt).width; };
+  let size = 66, lines = [guest];
+  while (width(size, guest) > maxW && size > 40) size -= 2;
+  const words = guest.split(" ");
+  if ((size < 54 || width(size, guest) > maxW) && words.length > 1) {
+    let k = 1, best = Infinity;
+    for (let i = 1; i < words.length; i++) {
+      const d = Math.abs(words.slice(0, i).join(" ").length - words.slice(i).join(" ").length);
+      if (d < best) { best = d; k = i; }
+    }
+    lines = [words.slice(0, k).join(" "), words.slice(k).join(" ")];
+    size = 60;
+    while (Math.max(...lines.map((l) => width(size, l))) > maxW && size > 34) size -= 2;
+  }
+  ctx.font = nameFont(size);
+  const asc = ctx.measureText("Hg").fontBoundingBoxAscent || size * 0.9;
+  const lh = Math.round(size * 1.05), dearH = 30, gap = 16;
+  const top = cy - Math.floor((dearH + gap + asc + lh * (lines.length - 1)) / 2);
+  ctx.font = DEAR_FONT[t.lang]; ctx.fillStyle = GOLD;
+  ctx.fillText(DEAR_WORD[t.lang], cx, top + dearH);
+  const base = top + dearH + gap + asc * 0.85;
+  ctx.font = nameFont(size); ctx.fillStyle = NAVY;
+  ctx.shadowColor = "rgba(14,34,96,0.28)"; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.shadowBlur = 3;
+  lines.forEach((l, i) => ctx.fillText(l, cx, base + i * lh));
   return c;
 }
 
-function introLayer({ guest, message }) {
-  return textLayer((ctx) => {
-    spaced(ctx, 6); ctx.font = `600 34px ${SERIF}`; ctx.fillStyle = GOLD;
-    ctx.fillText("A SPECIAL INVITATION FOR", W / 2, 330);
-    spaced(ctx, 0);
-    const end = fitText(ctx, guest, { y: 470, font: (s) => `400 ${s}px ${SCRIPT}`, size: 120, minSize: 64, maxWidth: 760, maxLines: 2, lineHeight: 1.05, color: INK });
-    divider(ctx, end + 70);
-    fitText(ctx, message, { y: end + 160, font: (s) => `italic 400 ${s}px ${SERIF}`, size: 50, minSize: 34, maxWidth: 740, maxLines: 7, lineHeight: 1.3, color: INK });
-  });
+function spacedText(ctx, text, x, y, px) {
+  if ("letterSpacing" in ctx) { ctx.letterSpacing = `${px}px`; ctx.fillText(text, x + px / 2, y); ctx.letterSpacing = "0px"; return; }
+  ctx.fillText(text, x, y);
 }
 
-function outroLayer({ rsvpName, rsvpPhone }) {
-  return textLayer((ctx) => {
-    spaced(ctx, 12); ctx.font = `600 76px ${SERIF}`; ctx.fillStyle = GOLD;
-    ctx.fillText("RSVP", W / 2, 380);
-    spaced(ctx, 0);
-    divider(ctx, 440);
-    ctx.font = `italic 400 46px ${SERIF}`; ctx.fillStyle = INK;
-    ctx.fillText("Kindly confirm your presence with", W / 2, 540);
-    const end = fitText(ctx, rsvpName, { y: 680, font: (s) => `400 ${s}px ${SCRIPT}`, size: 104, minSize: 60, maxWidth: 760, maxLines: 2, lineHeight: 1.05, color: INK });
-    spaced(ctx, 3); ctx.font = `600 64px ${SERIF}`; ctx.fillStyle = INK;
-    ctx.fillText(rsvpPhone, W / 2, end + 120);
-    spaced(ctx, 0); ctx.font = `italic 400 42px ${SERIF}`; ctx.fillStyle = GOLD;
-    ctx.fillText("We look forward to celebrating with you", W / 2, end + 220);
-  });
-}
-
-async function backgroundCanvas(jpegBytes) {
-  const bmp = await createImageBitmap(new Blob([jpegBytes], { type: "image/jpeg" }));
-  const [c, ctx] = outputCanvas();
-  ctx.drawImage(bmp, 0, 0, W, H);
+// RSVP card: the clip already carries the "RSVP / Kindly confirm…" heading; add contact name, phone, closing line.
+function rsvpLayer(t, rsvpName, rsvpPhone) {
+  const [c, ctx] = layer();
+  const cx = W / 2;
+  let s = 76;
+  ctx.font = `400 ${s}px ${RSVP_NAME_FONT}`;
+  while (ctx.measureText(rsvpName).width > 520 && s > 44) { s -= 2; ctx.font = `400 ${s}px ${RSVP_NAME_FONT}`; }
+  ctx.fillStyle = INK; ctx.fillText(rsvpName, cx, 560);
+  ctx.font = '600 44px "Cormorant Garamond", Georgia, serif';
+  spacedText(ctx, rsvpPhone, cx, 645, 2);
+  ctx.strokeStyle = GOLD; ctx.fillStyle = GOLD; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx - 100, 710); ctx.lineTo(cx - 12, 710); ctx.moveTo(cx + 12, 710); ctx.lineTo(cx + 100, 710); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 704); ctx.lineTo(cx + 6, 710); ctx.lineTo(cx, 716); ctx.lineTo(cx - 6, 710); ctx.closePath(); ctx.fill();
+  const [font, line] = CLOSING[t.lang];
+  ctx.font = font; ctx.fillText(line, cx, 785);
   return c;
 }
 
 const pngBytes = (canvas) => new Promise((resolve, reject) => canvas.toBlob(
-  (b) => b ? b.arrayBuffer().then((a) => resolve(new Uint8Array(a))) : reject(new Error("Could not render the slide image.")), "image/png"));
+  (b) => b ? b.arrayBuffer().then((a) => resolve(new Uint8Array(a))) : reject(new Error("Could not render the text.")), "image/png"));
 
-function slideArgs(name, seconds, fadeOutWholeFrame) {
-  const fadeText = `fade=t=in:st=0.15:d=0.8:alpha=1${fadeOutWholeFrame ? "" : `,fade=t=out:st=${seconds - 0.6}:d=0.6:alpha=1`}`;
-  const tail = fadeOutWholeFrame ? `,fade=t=out:st=${seconds - 0.6}:d=0.6` : "";
-  // Decode each PNG once and repeat the frame with the loop filter; `-loop 1` would
-  // re-decode both 1080x1920 images for every frame (~7x slower).
-  const repeat = `loop=loop=${Math.round(seconds * FPS) - 1}:size=1,setpts=N/${FPS}/TB`;
+// Overlays a text PNG on a background clip and encodes it with the template-matched x264 settings.
+function slideArgs(bg, png, out, seconds, { textIn, textOut, frameOut }) {
+  const frames = Math.round(seconds * FPS);
+  let text = `[1:v]format=yuva420p,loop=loop=-1:size=1,setpts=N/${FPS}/TB,fade=t=in:st=${textIn}:d=0.8:alpha=1`;
+  if (textOut != null) text += `,fade=t=out:st=${textOut}:d=0.8:alpha=1`;
+  const tail = frameOut != null ? `,fade=t=out:st=${frameOut}:d=0.8` : "";
   return [
-    "-i", "bg.png", "-i", `${name}.png`,
-    "-filter_complex", `[0:v]format=yuv420p,${repeat}[b];[1:v]format=yuva420p,${repeat},${fadeText}[t];` +
-      `[b][t]overlay=format=yuv420${tail},format=yuv420p,setsar=0[v]`,
-    "-map", "[v]",
-    "-t", String(seconds), "-r", String(FPS),
+    "-i", bg, "-i", png,
+    "-filter_complex", `[0:v]setpts=N/${FPS}/TB[b];${text}[t];[b][t]overlay=format=yuv420:eof_action=endall:shortest=1${tail},format=yuv420p,setsar=0[v]`,
+    "-map", "[v]", "-frames:v", String(frames),
     "-c:v", "libx264", "-profile:v", "high", "-level:v", X264_LEVEL, "-x264-params", X264_PARAMS,
-    "-video_track_timescale", "15360", "-y", `${name}.mp4`,
+    "-video_track_timescale", "15360", "-y", out,
   ];
 }
 
 // ---------- generation ----------
 async function generate(values) {
-  const template = manifest.templates.find((t) => t.id === values.templateId);
+  const t = manifest.templates.find((x) => x.id === values.templateId);
   const started = performance.now(), timings = {};
   const mark = (k, t0) => { timings[k] = ((performance.now() - t0) / 1000).toFixed(1); };
   logTail = [];
@@ -322,39 +305,47 @@ async function generate(values) {
   setProgress(0, "Loading the video engine");
   try {
     let t0 = performance.now();
-    await getEngine((p) => setProgress(p * 0.3, `Loading the video engine… ${Math.round(p * 100)}%`));
+    await getEngine((p) => setProgress(p * 0.25, `Loading the video engine… ${Math.round(p * 100)}%`));
     mark("engine", t0);
 
     t0 = performance.now();
-    const video = await getAsset(template, "video", (p) => setProgress(0.3 + p * 0.12, `Loading the main video… ${Math.round(p * 100)}%`));
-    const bg = await getAsset(template, "background");
-    const music = await getAsset(template, "music");
-    if (loadedVideoId !== template.id) { await ffmpeg.writeFile("main.mp4", video); loadedVideoId = template.id; }
+    const kinds = ["partB", "guestBg", "partA", "rsvpBg", "music"];
+    const sizes = kinds.map((k) => t.files[k].size), total = sizes.reduce((a, b) => a + b, 0);
+    let done = 0;
+    const bytes = {};
+    for (const [i, k] of kinds.entries()) {
+      bytes[k] = await getAsset(t, k, (p) => setProgress(0.25 + 0.2 * (done + p * sizes[i]) / total, `Loading the ${t.label} video… ${Math.round(100 * (done + p * sizes[i]) / total)}%`));
+      done += sizes[i];
+    }
+    if (loadedVideoId !== t.id) {
+      for (const k of kinds) await ffmpeg.writeFile(`${k}.${k === "music" ? "m4a" : "mp4"}`, bytes[k]);
+      loadedVideoId = t.id;
+    }
     mark("assets", t0);
 
     t0 = performance.now();
-    setProgress(0.43, "Designing the slides");
+    setProgress(0.46, "Writing the names");
     await ensureFonts();
-    await ffmpeg.writeFile("bg.png", await pngBytes(await backgroundCanvas(bg)));
-    await ffmpeg.writeFile("intro.png", await pngBytes(introLayer(values)));
-    await ffmpeg.writeFile("outro.png", await pngBytes(outroLayer(values)));
-    await ffmpeg.writeFile("music.m4a", music);
-    mark("slides", t0);
+    await ffmpeg.writeFile("guest.png", await pngBytes(guestLayer(t, values.guest)));
+    await ffmpeg.writeFile("rsvp.png", await pngBytes(rsvpLayer(t, values.rsvpName, values.rsvpPhone)));
+    mark("text", t0);
 
     t0 = performance.now();
-    await run(slideArgs("intro", INTRO_SECONDS, false), "Creating the opening slide", INTRO_SECONDS, 0.45, 0.68);
-    await run(slideArgs("outro", OUTRO_SECONDS, true), "Creating the RSVP slide", OUTRO_SECONDS, 0.68, 0.92);
+    await run(slideArgs("guestBg.mp4", "guest.png", "guest.mp4", t.guestSeconds, { textIn: 0.2, textOut: t.guestSeconds - 0.8 }),
+      "Adding the guest name", t.guestSeconds, 0.48, 0.72);
+    await run(slideArgs("rsvpBg.mp4", "rsvp.png", "rsvp.mp4", t.rsvpSeconds, { textIn: 0.1, frameOut: t.rsvpSeconds - 0.8 }),
+      "Adding the RSVP details", t.rsvpSeconds, 0.72, 0.94);
     mark("encode", t0);
 
     t0 = performance.now();
-    await ffmpeg.writeFile("list.txt", "file intro.mp4\nfile main.mp4\nfile outro.mp4\n");
-    // Video is stream-copied; the template's music (pre-encoded to the full length) is muxed over all of it.
+    await ffmpeg.writeFile("list.txt", "file partA.mp4\nfile guest.mp4\nfile partB.mp4\nfile rsvp.mp4\n");
+    // Video is stream-copied (template parts never re-encoded); the full-length music is muxed over all of it.
     await run(["-f", "concat", "-safe", "0", "-i", "list.txt", "-i", "music.m4a", "-map", "0:v", "-map", "1:a",
       "-c", "copy", "-shortest", "-movflags", "+faststart", "-y", "out.mp4"],
-      "Joining the video and music", INTRO_SECONDS + OUTRO_SECONDS + 20, 0.92, 0.99);
+      "Joining the video and music", t.totalSeconds, 0.94, 0.99);
     const out = await ffmpeg.readFile("out.mp4");
     mark("join", t0);
-    for (const f of ["intro.png", "outro.png", "bg.png", "intro.mp4", "outro.mp4", "out.mp4", "list.txt", "music.m4a"]) await ffmpeg.deleteFile(f).catch(() => {});
+    for (const f of ["guest.png", "rsvp.png", "guest.mp4", "rsvp.mp4", "out.mp4", "list.txt"]) await ffmpeg.deleteFile(f).catch(() => {});
     if (!out?.length) throw new Error("The finished video came out empty.");
 
     setProgress(1, "Done");
@@ -374,7 +365,7 @@ function friendly(ex) {
   return msg;
 }
 
-function slug(s) { return s.normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 40) || "Guest"; }
+function slug(s) { return s.normalize("NFC").replace(/[^\p{L}\p{M}\p{N}\s-]/gu, "").trim().replace(/\s+/g, "-").slice(0, 40) || "Guest"; }
 
 function showResult(bytes, values, seconds, timings) {
   if (resultUrl) URL.revokeObjectURL(resultUrl);
@@ -385,7 +376,7 @@ function showResult(bytes, values, seconds, timings) {
   const dl = $("download-btn");
   dl.href = resultUrl; dl.download = filename;
   $("result-meta").textContent = `${(bytes.length / 1048576).toFixed(1)} MB · made in ${seconds}s ` +
-    `(engine ${timings.engine}s, video ${timings.assets}s, slides ${timings.encode}s, join ${timings.join}s)`;
+    `(engine ${timings.engine}s, video ${timings.assets}s, names ${timings.encode}s, join ${timings.join}s)`;
   const file = new File([blob], filename, { type: "video/mp4" });
   const share = $("share-btn");
   share.hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));

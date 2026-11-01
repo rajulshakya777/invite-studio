@@ -7,7 +7,7 @@
   <title>Invite Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=Noto+Serif+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=Kalam:wght@700&family=Noto+Serif+Devanagari:wght@400;600&family=Playball&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
     <header class="brand">
       <p class="eyebrow">Rajul &amp; Dolly</p>
       <h1>Invite Studio</h1>
-      <p class="tag">Prototype · one template</p>
+      <p class="tag">Personalised wedding invitation videos</p>
     </header>
 
     <!-- Step 1: password -->
@@ -34,16 +34,18 @@
       <h2>Personalise the invitation</h2>
       <form id="invite-form" novalidate>
         <fieldset>
-          <legend>Template</legend>
-          <div id="template-list" class="radio-list"></div>
+          <legend>Invitation from</legend>
+          <div id="side-list" class="radio-list inline"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Language</legend>
+          <div id="lang-list" class="radio-list inline"></div>
         </fieldset>
 
         <label for="guest">Guest name</label>
-        <input id="guest" maxlength="48" placeholder="e.g. Sharma Family" required>
+        <input id="guest" maxlength="40" placeholder="e.g. Sharma Family" required>
+        <p class="hint">Shown as “Dear …” on the invitation page (“प्रिय …” in Hindi).</p>
 
-        <label for="message">Invitation message</label>
-        <textarea id="message" rows="4" maxlength="240" required>With the blessings of our families, we warmly invite you to celebrate our wedding with us.</textarea>
-        <p class="hint"><span id="message-count"></span> / 240</p>
 
         <fieldset>
           <legend>RSVP contact</legend>

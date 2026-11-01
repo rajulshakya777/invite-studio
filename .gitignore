@@ -2,3 +2,4 @@ source/
 .DS_Store
 node_modules/
 sample-*.mp4
+vid-imgs/
