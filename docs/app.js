@@ -221,8 +221,25 @@ async function readForm() {
   return [v, null];
 }
 
-$("invite-form").addEventListener("submit", async (e) => {
+// Generation starts only from the "Create invitation video" button. Pressing Enter/Go on the keyboard
+// just moves to the next field (or closes the keyboard on the last one).
+$("invite-form").addEventListener("submit", (e) => e.preventDefault());
+$("invite-form").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || e.target.tagName !== "INPUT" || e.target.type === "checkbox" || e.target.type === "radio") return;
   e.preventDefault();
+  const fields = [...$("invite-form").querySelectorAll("input:not([type=radio]):not([type=checkbox]), select")]
+    .filter((el) => el.offsetParent !== null);
+  const next = fields[fields.indexOf(e.target) + 1];
+  if (next) next.focus(); else e.target.blur();
+});
+let generating = false;
+$("generate-btn").addEventListener("click", async (e) => {
+  e.preventDefault();
+  if (generating) return;
+  generating = true;
+  try { await startFromForm(); } finally { generating = false; }
+});
+async function startFromForm() {
   const [values, problem] = await readForm();
   $("form-error").hidden = !problem;
   if (problem) { $("form-error").textContent = problem; return; }
@@ -234,7 +251,7 @@ $("invite-form").addEventListener("submit", async (e) => {
     renderContacts("s-0");
   }
   await generate(values);
-});
+}
 
 $("again-btn").addEventListener("click", () => { $("guest").value = ""; guestHindi.reset(); renderContacts(); show("step-form"); $("guest").focus(); });
 $("retry-btn").addEventListener("click", () => show(key ? "step-form" : "step-lock"));

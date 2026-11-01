@@ -118,11 +118,11 @@
         <div id="lang-list" class="tiles" role="radiogroup" aria-label="Language"></div>
 
         <label for="guest" class="field-label">Guest name</label>
-        <input id="guest" maxlength="40" placeholder="e.g. Sharma Family" required>
+        <input id="guest" enterkeyhint="next" maxlength="40" placeholder="e.g. Sharma Family" required>
         <p class="hint" id="guest-hint">Appears as “Dear …” on the invitation page.</p>
         <div id="guest-hi-wrap" class="hindi-box" hidden>
           <label for="guest-hi">Name in Hindi</label>
-          <input id="guest-hi" lang="hi" maxlength="40" placeholder="Filled in automatically">
+          <input id="guest-hi" enterkeyhint="next" lang="hi" maxlength="40" placeholder="Filled in automatically">
           <p class="hint">Translated automatically from the name above. Tap to correct it. <button type="button" class="link" id="guest-hi-redo">Translate again</button></p>
         </div>
 
@@ -131,16 +131,16 @@
         <button type="button" id="remove-contact" class="link" hidden>Remove this saved contact</button>
         <div id="new-contact" class="new-contact" hidden>
           <label for="rsvp-name">Name</label>
-          <input id="rsvp-name" maxlength="40" placeholder="e.g. Neha">
+          <input id="rsvp-name" enterkeyhint="next" maxlength="40" placeholder="e.g. Neha">
           <label for="rsvp-name-hi">Name in Hindi</label>
-          <input id="rsvp-name-hi" lang="hi" maxlength="40" placeholder="Filled in automatically">
+          <input id="rsvp-name-hi" enterkeyhint="next" lang="hi" maxlength="40" placeholder="Filled in automatically">
           <label for="rsvp-phone">Phone number</label>
-          <input id="rsvp-phone" type="tel" inputmode="tel" maxlength="20" placeholder="e.g. +91 98765 43210">
+          <input id="rsvp-phone" enterkeyhint="done" type="tel" inputmode="tel" maxlength="20" placeholder="e.g. +91 98765 43210">
           <label class="check"><input type="checkbox" id="save-contact" checked> Save this contact for next time</label>
         </div>
 
         <p class="error" id="form-error" hidden></p>
-        <button type="submit" class="primary" id="generate-btn">Create invitation video</button>
+        <button type="button" class="primary" id="generate-btn">Create invitation video</button>
       </form>
     </section>
 
