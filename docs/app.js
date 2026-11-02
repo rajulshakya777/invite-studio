@@ -442,11 +442,13 @@ function guestLayer(t, guest) {
   let L = null;
   for (let size = 84; size >= 24 && !L; size -= 2) L = fit(size, [guest]) || (two && fit(size, two));
   L ??= fit(24, two || [guest]) || { size: 24, lines: [guest], dearPx: 20, firstBase: bottom - GAP - 6, dearBase: bottom - GAP - 34, lh: 25 };
+  // centred on the real ink (pixel-measured), so Hindi and English names sit exactly in the middle on every browser
+  const centred = (text, size, y) => { const [a, b] = inkSpan(text, ctx.font, size); ctx.textAlign = "left"; ctx.fillText(text, cx - (a + b) / 2, y); ctx.textAlign = "center"; };
   ctx.font = dearFont(L.dearPx); ctx.fillStyle = GOLD;
-  ctx.fillText(DEAR_WORD[t.lang], cx, L.dearBase);
+  centred(DEAR_WORD[t.lang], L.dearPx, L.dearBase);
   ctx.font = nameFont(L.size); ctx.fillStyle = NAVY;
   ctx.shadowColor = "rgba(14,34,96,0.28)"; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.shadowBlur = 3;
-  L.lines.forEach((l, i) => ctx.fillText(l, cx, L.firstBase + i * L.lh));
+  L.lines.forEach((l, i) => centred(l, L.size, L.firstBase + i * L.lh));
   return c;
 }
 
@@ -633,13 +635,31 @@ function drawCardGuest(ctx, box, rawName) {
   const ms = lines.map((ln) => ctx.measureText(ln));
   const asc = ms[0].actualBoundingBoxAscent, desc = ms[ms.length - 1].actualBoundingBoxDescent;
   const first = (box.top + box.bottom) / 2 - (asc + gap * (lines.length - 1) + desc) / 2 + asc;
-  // centre each line on the ink of the name itself; the trailing comma hangs outside so the name sits under "Dear"
+  // centre each line on the ink of the name itself; the trailing comma hangs outside so the name sits under "Dear".
+  // The ink edges are found by scanning pixels: some browsers (iPhone Safari) misreport text bounds for Devanagari.
   ctx.textAlign = "left";
   lines.forEach((ln, i) => {
-    const m = ctx.measureText(ln.replace(/,$/, ""));
-    ctx.fillText(ln, box.cx - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2, first + i * gap);
+    const [inkL, inkR] = inkSpan(ln.replace(/,$/, ""), ctx.font, size);
+    ctx.fillText(ln, box.cx - (inkL + inkR) / 2, first + i * gap);
   });
   return { lines, size };
+}
+// Horizontal ink extent [left, right] of text drawn with textAlign "left" at x = 0, measured from real pixels.
+function inkSpan(text, font, size) {
+  const pad = Math.ceil(size);
+  const c = document.createElement("canvas");
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.font = font;
+  const adv = g.measureText(text).width;
+  c.width = Math.ceil(adv + 2 * pad); c.height = Math.ceil(size * 2.2);
+  g.font = font; g.textAlign = "left"; g.textBaseline = "alphabetic"; g.fillStyle = "#000";
+  g.fillText(text, pad, Math.round(size * 1.5));
+  const { data, width, height } = g.getImageData(0, 0, c.width, c.height);
+  let L = -1, R = -1;
+  for (let x = 0; x < width && L < 0; x++) for (let y = 0; y < height; y++) if (data[(y * width + x) * 4 + 3] > 24) { L = x; break; }
+  for (let x = width - 1; x >= 0 && R < 0; x--) for (let y = 0; y < height; y++) if (data[(y * width + x) * 4 + 3] > 24) { R = x + 1; break; }
+  c.width = c.height = 0;
+  return L < 0 ? [0, adv] : [L - pad, R - pad];
 }
 async function renderCard(card, guest, onProgress) {
   const bytes = await getCardBase(card, onProgress);
