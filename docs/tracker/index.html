@@ -48,12 +48,12 @@
 
       <div class="t-filters">
         <input id="t-search" type="search" placeholder="Search guest or RSVP name" autocomplete="off">
-        <select id="t-type" aria-label="Invite type">
-          <option value="">Video and card</option><option value="Video">Videos</option><option value="Card">Cards</option>
-        </select>
-        <select id="t-lang" aria-label="Language">
-          <option value="">Both languages</option><option value="English">English</option><option value="Hindi">Hindi</option>
-        </select>
+        <div class="select-wrap"><select id="t-type" aria-label="Invite type">
+          <option value="">Videos and cards</option><option value="Video">Videos only</option><option value="Card">Cards only</option>
+        </select></div>
+        <div class="select-wrap"><select id="t-lang" aria-label="Language">
+          <option value="">Both languages</option><option value="English">English only</option><option value="Hindi">Hindi only</option>
+        </select></div>
       </div>
 
       <p id="t-status" class="hint"></p>

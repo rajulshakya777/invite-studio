@@ -17,8 +17,11 @@
 .t-stat small { display: block; margin-top: 2px; font: 600 11px "Cinzel", serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 
 .t-filters { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin: 16px 0 4px; }
-.t-filters input, .t-filters select { font: 15px "Noto Sans", "Noto Sans Devanagari", sans-serif; padding: 10px 12px; }
-.t-filters select { width: auto; padding-right: 14px; appearance: auto; -webkit-appearance: menulist; }
+.t-filters input, .t-filters select { height: 46px; font: 15px "Noto Sans", "Noto Sans Devanagari", sans-serif; padding: 0 14px; }
+/* same look as the studio's selects: no native chrome, maroon chevron from .select-wrap */
+.t-filters select { min-width: 190px; padding-right: 40px; color: var(--ink); background: #fff; cursor: pointer;
+  appearance: none; -webkit-appearance: none; }
+.t-filters .select-wrap::after { right: 16px; }
 
 .t-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
 .t-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; align-items: center; background: #fff;
@@ -48,7 +51,7 @@
   .t-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .t-filters { grid-template-columns: 1fr 1fr; }
   .t-filters input { grid-column: 1 / -1; }
-  .t-filters select { width: 100%; }
+  .t-filters select { width: 100%; min-width: 0; }
   .t-toolbar { justify-content: center; }
 }
 @media (max-width: 380px) {
