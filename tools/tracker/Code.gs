@@ -9,6 +9,9 @@ const TABS = { rajul: "Rajul", dolly: "Dolly" };
 // Columns A–K: Created, Type, Language, Guest name, RSVP name, RSVP phone, Downloaded, Shared, Sent, Device, ID
 const COL = { created: 1, type: 2, lang: 3, guest: 4, rsvpName: 5, rsvpPhone: 6, downloaded: 7, shared: 8, sent: 9, device: 10, id: 11 };
 const WIDTH = 11;
+const WHEN = "dd mmm yyyy, h:mm am/pm";
+// Dates read back from Sheets fail `instanceof Date` in Apps Script, so test the shape instead.
+const isDate = (v) => Object.prototype.toString.call(v) === "[object Date]" && !isNaN(v.getTime());
 
 function doGet() {
   return out({ ok: true, service: "invite-tracker" });
@@ -63,14 +66,17 @@ function add(r) {
   if (findRow(id)) return { ok: true, duplicate: true }; // a retried request
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tab);
   const created = new Date(r.created);
-  const row = sh.getLastRow() + 1;
-  sh.getRange(row, 1, 1, WIDTH).setValues([[
+  // appendRow adds after the last row with content and grows the grid when needed
+  sh.appendRow([
     isNaN(created) ? new Date() : created,
     r.type === "card" ? "Card" : "Video",
     r.lang === "hi" ? "Hindi" : "English",
     text(r.guest, 120), text(r.rsvpName, 80), text(r.rsvpPhone, 30),
     "", "", false, text(r.device, 60), id,
-  ]]);
+  ]);
+  const row = sh.getLastRow();
+  sh.getRange(row, COL.created).setNumberFormat(WHEN);
+  sh.getRange(row, COL.downloaded, 1, 2).setNumberFormat(WHEN);
   sh.getRange(row, COL.sent).insertCheckboxes();
   return { ok: true, row };
 }
@@ -91,7 +97,7 @@ function mark(id, field, value) {
 
 function list() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const iso = (v) => (v instanceof Date ? v.toISOString() : "");
+  const iso = (v) => (isDate(v) ? v.toISOString() : "");
   const rows = [];
   for (const [side, name] of Object.entries(TABS)) {
     const sh = ss.getSheetByName(name);
