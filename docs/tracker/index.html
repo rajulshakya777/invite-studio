@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#6e1423">
+  <title>Invite Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%236e1423'/%3E%3Cpath d='M18 33l9 9 19-20' fill='none' stroke='%23e8c66f' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=Noto+Sans:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="tracker.css">
+</head>
+<body>
+  <div class="toran" aria-hidden="true"></div>
+  <main class="shell wide">
+    <header class="brand">
+      <h1 class="couple">Rajul <span class="amp">&amp;</span> Dolly</h1>
+      <p class="eyebrow">Invite tracker</p>
+    </header>
+
+    <section id="t-lock" class="card">
+      <form id="t-lock-form">
+        <label for="t-password">Family password</label>
+        <input id="t-password" type="password" autocomplete="current-password" required>
+        <p id="t-lock-error" class="error" hidden></p>
+        <div class="actions"><button id="t-unlock" class="primary" type="submit">Open the tracker</button></div>
+      </form>
+    </section>
+
+    <section id="t-main" hidden>
+      <div class="t-toolbar">
+        <div class="t-seg" role="tablist" aria-label="Family">
+          <button type="button" data-side="all" class="on">All <span></span></button>
+          <button type="button" data-side="rajul">Rajul <span></span></button>
+          <button type="button" data-side="dolly">Dolly <span></span></button>
+        </div>
+        <div class="t-tools">
+          <button type="button" id="t-refresh" class="t-link">Refresh</button>
+          <a id="t-sheet" class="t-link" target="_blank" rel="noopener" hidden>Open sheet</a>
+          <a class="t-link" href="../">Studio</a>
+        </div>
+      </div>
+
+      <div class="t-stats" id="t-stats"></div>
+
+      <div class="t-filters">
+        <input id="t-search" type="search" placeholder="Search guest or RSVP name" autocomplete="off">
+        <select id="t-type" aria-label="Invite type">
+          <option value="">Video and card</option><option value="Video">Videos</option><option value="Card">Cards</option>
+        </select>
+        <select id="t-lang" aria-label="Language">
+          <option value="">Both languages</option><option value="English">English</option><option value="Hindi">Hindi</option>
+        </select>
+      </div>
+
+      <p id="t-status" class="hint"></p>
+      <ol id="t-list" class="t-list"></ol>
+
+      <details class="card t-rsvp" id="t-rsvp-box">
+        <summary>By RSVP contact</summary>
+        <table><thead><tr><th>RSVP contact</th><th>Phone</th><th>Invites</th></tr></thead><tbody id="t-rsvp"></tbody></table>
+      </details>
+    </section>
+  </main>
+  <script type="module" src="tracker.js"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import { FFmpeg } from "./vendor/ffmpeg/index.js";
+import { connectTracker, flushTracker, track, newId, deviceName } from "./tracker-client.js";
 
 // Output is 720x1280 for phones/WhatsApp. All slide artwork is drawn directly on a 720x1280 canvas.
 const W = 720, H = 1280, FPS = 30;
@@ -47,6 +48,7 @@ $("lock-form").addEventListener("submit", async (e) => {
     key = await deriveKey($("password").value);
     try { await decrypt(manifest.check.iv, fromB64(manifest.check.ct)); }
     catch { key = null; throw new Error("Wrong password. Please try again."); }
+    connectTracker(key).then((ok) => ok && flushTracker());
     renderTemplates();
     renderContacts();
     updateLangUI();
@@ -713,6 +715,12 @@ function showResult(blob, values, filename, meta) {
   else { $("card-preview").removeAttribute("src"); $("preview").src = resultUrl; }
   const dl = $("download-btn");
   dl.href = resultUrl; dl.download = filename;
+  // tracker: one row per invite made (Rajul or Dolly tab, from the chosen template), then the first download/share
+  const t = isCard ? manifest.cards.find((c) => c.id === values.cardId) : manifest.templates.find((x) => x.id === values.templateId);
+  const logId = newId();
+  track("add", { row: { id: logId, created: new Date().toISOString(), side: t?.side, lang: t?.lang, type: what,
+    guest: values.guest, rsvpName: isCard ? "" : values.rsvpName, rsvpPhone: isCard ? "" : values.rsvpPhone, device: deviceName() } });
+  dl.onclick = () => { track("mark", { id: logId, field: "downloaded" }); };
   dl.textContent = isCard ? "Download card" : "Download video";
   $("again-btn").textContent = isCard ? "Make another card" : "Make another video";
   $("other-btn").textContent = isCard ? "Make a video invite" : "Make a card invite";
@@ -732,7 +740,7 @@ function showResult(blob, values, filename, meta) {
   $("share-btn").onclick = async () => {
     const note = $("share-note");
     if (canShareFile) {
-      try { await navigator.share({ files: [file] }); note.hidden = true; return; }
+      try { await navigator.share({ files: [file] }); note.hidden = true; track("mark", { id: logId, field: "shared" }); return; }
       catch (ex) { if (ex?.name === "AbortError") return; }
     }
     dl.click();

@@ -1,0 +1,57 @@
+/* Tracker page: same palette as the studio, denser layout for reading many rows. */
+.shell.wide { max-width: 980px; }
+.brand .eyebrow { margin-top: 2px; }
+#t-lock { max-width: 460px; margin: 10px auto 0; }
+
+.t-toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin: 4px 0 14px; }
+.t-seg { display: inline-flex; padding: 3px; gap: 3px; background: #fff; border: 1px solid var(--line); border-radius: 999px; }
+.t-seg button { border: 0; background: none; padding: 8px 16px; font: 600 13px "Cinzel", serif; letter-spacing: .08em; color: var(--maroon); }
+.t-seg button.on { background: linear-gradient(180deg, var(--maroon-2), var(--maroon)); color: var(--gold-3); }
+.t-seg span { font: 600 12px "Noto Sans", sans-serif; opacity: .75; margin-left: 2px; }
+.t-tools { display: flex; gap: 16px; }
+.t-link { border: 0; background: none; padding: 4px 0; color: var(--maroon); font: italic 600 16px "Cormorant Garamond", serif; text-decoration: underline; cursor: pointer; }
+
+.t-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.t-stat { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.t-stat b { display: block; font: 600 28px/1.1 "Noto Sans", sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; }
+.t-stat small { display: block; margin-top: 2px; font: 600 11px "Cinzel", serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+.t-filters { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin: 16px 0 4px; }
+.t-filters input, .t-filters select { font: 15px "Noto Sans", "Noto Sans Devanagari", sans-serif; padding: 10px 12px; }
+.t-filters select { width: auto; padding-right: 14px; appearance: auto; -webkit-appearance: menulist; }
+
+.t-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.t-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; align-items: center; background: #fff;
+  border: 1px solid var(--line); border-left: 4px solid var(--maroon); border-radius: 12px; padding: 10px 14px;
+  font: 14px/1.45 "Noto Sans", "Noto Sans Devanagari", sans-serif; }
+.t-row.dolly { border-left-color: var(--gold); }
+.t-guest { font: 600 17px "Noto Sans", "Noto Sans Devanagari", sans-serif; color: var(--ink); overflow-wrap: anywhere; }
+.t-dup { margin-left: 6px; font: 600 11px "Noto Sans", sans-serif; color: var(--maroon); background: #fbe9c2; border-radius: 999px; padding: 1px 7px; vertical-align: 2px; }
+.t-meta, .t-rsvpline { color: var(--muted); }
+.t-rsvpline b { color: var(--ink); font-weight: 600; }
+.t-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.t-chip { font: 600 12px "Noto Sans", sans-serif; padding: 2px 9px; border-radius: 999px; background: #f3ece0; color: var(--muted); }
+.t-chip.yes { background: #e3f1e6; color: #24613a; }
+.t-sent { grid-row: 1 / span 3; grid-column: 2; display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 0;
+  font: 600 11px "Cinzel", serif; letter-spacing: .08em; text-transform: uppercase; color: var(--maroon); cursor: pointer; }
+.t-sent input { width: 26px; height: 26px; accent-color: #1f8a4c; cursor: pointer; }
+.t-empty { text-align: center; padding: 28px 10px; color: var(--muted); font-style: italic; }
+
+.t-rsvp { margin-top: 18px; padding: 14px 18px; }
+.t-rsvp summary { cursor: pointer; font: 600 14px "Cinzel", serif; letter-spacing: .1em; text-transform: uppercase; color: var(--maroon); }
+.t-rsvp table { width: 100%; border-collapse: collapse; margin-top: 10px; font: 14px "Noto Sans", "Noto Sans Devanagari", sans-serif; }
+.t-rsvp th { text-align: left; font: 600 11px "Cinzel", serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.t-rsvp td { padding: 7px 4px; border-bottom: 1px solid #f1e6cc; }
+.t-rsvp td:last-child, .t-rsvp th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 720px) {
+  .t-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .t-filters { grid-template-columns: 1fr 1fr; }
+  .t-filters input { grid-column: 1 / -1; }
+  .t-filters select { width: 100%; }
+  .t-toolbar { justify-content: center; }
+}
+@media (max-width: 380px) {
+  .t-seg button { padding: 8px 11px; }
+  .t-stat b { font-size: 22px; }
+}
