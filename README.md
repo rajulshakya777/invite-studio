@@ -12,7 +12,7 @@ an opening slide (guest name + message), then the unchanged main video, then an 
 
 ## Invite tracker
 
-`/tracker/` (same studio password) lists every invite made: Rajul or Dolly side, video or card, language, guest,
+`/tracker/` (same studio password) lists every invite that was downloaded or shared (one only previewed is not logged): Rajul or Dolly side, video or card, language, guest,
 RSVP contact, first download/share, and a "Sent" tick. The data lives in the Google Sheet "Wedding Invite Tracker"
 (tabs Rajul, Dolly, Summary), written by a Google Apps Script web app (`tools/tracker/Code.gs`, deployed as
 Web app / Execute as me / Anyone; the real token replaces the placeholder only in the deployed copy).

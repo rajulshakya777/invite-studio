@@ -715,12 +715,20 @@ function showResult(blob, values, filename, meta) {
   else { $("card-preview").removeAttribute("src"); $("preview").src = resultUrl; }
   const dl = $("download-btn");
   dl.href = resultUrl; dl.download = filename;
-  // tracker: one row per invite made (Rajul or Dolly tab, from the chosen template), then the first download/share
+  // tracker: an invite is logged (Rajul or Dolly tab, from the chosen template) only once it is downloaded or
+  // shared; a video or card that is only previewed leaves no row. Later downloads/shares just mark the same row.
   const t = isCard ? manifest.cards.find((c) => c.id === values.cardId) : manifest.templates.find((x) => x.id === values.templateId);
-  const logId = newId();
-  track("add", { row: { id: logId, created: new Date().toISOString(), side: t?.side, lang: t?.lang, type: what,
-    guest: values.guest, rsvpName: isCard ? "" : values.rsvpName, rsvpPhone: isCard ? "" : values.rsvpPhone, device: deviceName() } });
-  dl.onclick = () => { track("mark", { id: logId, field: "downloaded" }); };
+  const logId = newId(), created = new Date().toISOString();
+  let logged = false;
+  const logAction = (field) => {
+    if (!logged) {
+      logged = true;
+      track("add", { row: { id: logId, created, side: t?.side, lang: t?.lang, type: what,
+        guest: values.guest, rsvpName: isCard ? "" : values.rsvpName, rsvpPhone: isCard ? "" : values.rsvpPhone, device: deviceName() } });
+    }
+    track("mark", { id: logId, field });
+  };
+  dl.onclick = () => logAction("downloaded");
   dl.textContent = isCard ? "Download card" : "Download video";
   $("again-btn").textContent = isCard ? "Make another card" : "Make another video";
   $("other-btn").textContent = isCard ? "Make a video invite" : "Make a card invite";
@@ -740,7 +748,7 @@ function showResult(blob, values, filename, meta) {
   $("share-btn").onclick = async () => {
     const note = $("share-note");
     if (canShareFile) {
-      try { await navigator.share({ files: [file] }); note.hidden = true; track("mark", { id: logId, field: "shared" }); return; }
+      try { await navigator.share({ files: [file] }); note.hidden = true; logAction("shared"); return; }
       catch (ex) { if (ex?.name === "AbortError") return; }
     }
     dl.click();
